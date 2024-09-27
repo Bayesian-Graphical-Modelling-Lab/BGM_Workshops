@@ -28,7 +28,7 @@ data <- read.csv("exampledata.csv")[, -1]
 res <- easybgm(data = data,          #(M) n*p matrix of responses
                type = "continuous",  #(M) type of data
                package = "BGGM",     #(O) package to use
-               iter = 1e4,           #(O) no. iterations sampler 1e5
+               iter = 1e4,           #(O) no. iterations sampler 1e4
                save = FALSE,          #(O) Should samples be stored
                centrality = FALSE,   #(O) Should centrality be computed
                progress = TRUE)      #(O) Should the progress bar be plotted
@@ -50,18 +50,18 @@ plot_edgeevidence(res, evidence_thresh = 10)
 # To help with the interpretation of networks, we'll split it in two
 par(mfrow = c(1, 2))
 plot_edgeevidence(res, edge.width = 3, 
-                  split = T, legend = F, 
+                  split = T, legend = T, 
                   evidence_thresh = 10)
 
 # -----------------------------------------------------------------------------------------------------------------
 # b. Plot network model (Estimation)
 par(mfrow = c(1, 1))
-plot_network(res, exc_prob = 0.5)
+plot_network(res, exc_prob = 0.91)
 
 # customizing the plot
 Names_data <- colnames(data)
 groups_data <- c(rep("DASS", 3), rep("Personality", 10))
-plot_network(res, exc_prob = 0.5, layout = "spring", 
+plot_network(res, exc_prob = 0.5, layout = "circle", 
              nodeNames = Names_data, groups = groups_data, 
              color= c("#fbb20a","#E59866"), 
              theme = "Borkulo", dashed = T)
@@ -84,7 +84,7 @@ plot_parameterHDI(res)
 # -----------------------------------------------------------------------------------------------------------------
 # d. Plot strength centrality
 
-#plot_centrality(res)
+plot_centrality(res)
 
 # =========================
 # 3. Priors 
@@ -101,10 +101,10 @@ plot_parameterHDI(res)
 # due to an issue in the calculation of the prior odds
 # in this case, simply use the posterior inclusion probability
 # as a measure of evidence for the inclusion of an edge. Or
-# posterior inclusion probability/(1-posterior inclusion probability)
-# in case you use beta_bernoulli_alpha = 1 and beta_bernoulli_beta = 1
+# BF = posterior inclusion probability/(1-posterior inclusion probability)
+# only in case you use beta_bernoulli_alpha = 1 and beta_bernoulli_beta = 1
 
-res <- easybgm(data = Wenchuan[, 1:5]),#(M) n*p matrix of responses
+res <- easybgm(data = Wenchuan[, 1:5],#(M) n*p matrix of responses
                type = "ordinal",  #(M) type of data
                package = "bgms",  #(O) type of sampling algorithm
                iter = 3e3,           #(O) no. iterations (for illustrative purposes)
