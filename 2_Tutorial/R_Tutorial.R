@@ -91,7 +91,7 @@ plot_centrality(res)
 # =========================
 # Note that the help file says that bgms has two options for the 
 # interaction prior; this is no longer the case, only the Cauchy prior 
-#(with an adjustable scale parameter) is available. Additionally,
+# (with an adjustable scale parameter) is available. Additionally,
 # the stochastic block as a prior on the network structure
 # (i.e., edge prior) is available for use however, a paper
 # explaining the method is still in preparation.
