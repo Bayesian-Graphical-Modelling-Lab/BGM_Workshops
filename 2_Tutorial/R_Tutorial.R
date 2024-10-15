@@ -2,19 +2,19 @@
 #  0. SETUP
 # =========================
 
-# For questions, contact
+# For questions, please contact
 # n.sekulovski@uva.nl
 
-# Set working directory
+# Set working directory if necessary 
 
 # Load background functions
-# install.packages("easybgm")
+# install.packages("easybgm")  # CRAN version 
 # remotes::install_github("KarolineHuth/easybgm", ref = "developer")
 
 library(easybgm)
 
 # Load data
-data <- read.csv("exampledata.csv")[, -1]
+data <- read.csv("2_Tutorial/exampledata.csv")[, -1]
 
 
 # -----------------------------------------------------------------------------------------------------------------
@@ -25,9 +25,9 @@ data <- read.csv("exampledata.csv")[, -1]
 
 # 1. Fit the model
 ?easybgm
-res <- easybgm(data = data,          #(M) n*p matrix of responses
-               type = "continuous",  #(M) type of data
-               package = "BGGM",     #(O) package to use
+res <- easybgm(data = data,          #(M) n*p matrix of responses (mandatory)
+               type = "continuous",  #(M) type of data (mandatory)
+               package = "BGGM",     #(O) package to use (optional)
                iter = 1e4,           #(O) no. iterations sampler 1e4
                save = FALSE,          #(O) Should samples be stored
                centrality = FALSE,   #(O) Should centrality be computed
@@ -56,12 +56,12 @@ plot_edgeevidence(res, edge.width = 3,
 # -----------------------------------------------------------------------------------------------------------------
 # b. Plot network model (Estimation)
 par(mfrow = c(1, 1))
-plot_network(res, exc_prob = 0.91)
+plot_network(res, exc_prob = 0.91) # exc_prob is by default set to 0.5
 
 # customizing the plot
 Names_data <- colnames(data)
 groups_data <- c(rep("DASS", 3), rep("Personality", 10))
-plot_network(res, exc_prob = 0.5, layout = "circle", 
+plot_network(res, exc_prob = 0.5, layout = "spring", 
              nodeNames = Names_data, groups = groups_data, 
              color= c("#fbb20a","#E59866"), 
              theme = "Borkulo", dashed = T)
@@ -97,7 +97,7 @@ plot_centrality(res)
 # explaining the method is still in preparation.
 
 # If you use the Beta-Bernoulli prior, please note that
-# there is an issue when calculating the inclusion Bayes factor
+# there might be an issue when calculating the inclusion Bayes factor
 # due to an issue in the calculation of the prior odds
 # in this case, simply use the posterior inclusion probability
 # as a measure of evidence for the inclusion of an edge. Or
