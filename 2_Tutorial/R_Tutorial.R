@@ -13,8 +13,9 @@
 
 library(easybgm)
 
+
 # Load data
-data <- read.csv("exampledata.csv")[, -1]
+data <- read.csv("2_Tutorial/exampledata.csv")[, -1]
 
 
 # -----------------------------------------------------------------------------------------------------------------
@@ -26,16 +27,16 @@ data <- read.csv("exampledata.csv")[, -1]
 # 1. Fit the model
 ?easybgm
 
-fit <- easybgm(data = data[,c(1:3)],          #(M) n*p matrix of fitponses (mandatory)
+fit <- easybgm(data = data, #(M) n*p data matrix(mandatory)
                type = "continuous", #(M) type of data (mandatory)
-               package = "BGGM",    #(O) package to use (optional)
+               package = "BDgraph",    #(O) package to use (optional)
                iter = 1e4,          #(O) no. iterations sampler 1e4
-               save = FALSE,        #(O) Should samples be stored
+               save = TRUE,        #(O) Should samples be stored
                centrality = FALSE,  #(O) Should centrality be computed
                progress = TRUE)     #(O) Should the progress bar be plotted
 
 
-# summary of the fitults 
+# summary of the fit 
 summary(fit)
 
 # -----------------------------------------------------------------------------------------------------------------
@@ -46,13 +47,13 @@ summary(fit)
 
 
 # a. Plot evidence plot (Testing)
-plot_edgeevidence(fit, evidence_thfith = 10)
+plot_edgeevidence(fit, evidence_thresh = 10)
 
 # To help with the interpretation of networks, we'll split it in two
 par(mfrow = c(1, 2))
 plot_edgeevidence(fit, edge.width = 3, 
                   split = T, legend = T, 
-                  evidence_thfith = 10)
+                  evidence_thresh = 10)
 
 # -----------------------------------------------------------------------------------------------------------------
 # b. Plot network model (Estimation)
@@ -71,7 +72,7 @@ plot_network(fit, exc_prob = 0.5, layout = "circle",
 # We need to fit the model again, this time by saving the samples 
 fit <- easybgm(data = data,          #(M) n*p matrix of fitponses
                type = "continuous",  #(M) type of data
-               package = "BGGM",  #(O) type of sampling algorithm
+               package = "BDgraph",  #(O) type of sampling algorithm
                iter = 1e4,           #(O) no. iterations sampler 1e5
                save = TRUE,          #(O) Should samples be stored
                centrality = TRUE,   #(O) Should centrality be computed
@@ -87,15 +88,14 @@ plot_centrality(fit)
 
 
 # e. Structure plots 
-plot_structure_probabilities(fit2)
-plot_complexity_probabilities(fit2)
-plot_structure(fit2)
+plot_complexity_probabilities(fit)
+plot_structure(fit)
 
 
 # =========================
 # 3. Priors 
 # =========================
-
+library(bgms) # for the dataset
 fit <- easybgm(data = Wenchuan[, 1:5],#(M) n*p matrix of fitponses
                type = "ordinal",  #(M) type of data
                package = "bgms",  #(O) type of sampling algorithm
@@ -111,9 +111,9 @@ plot_edgeevidence(fit, edge.width = 3, split = F,
 summary(fit)
 
 
-# =========================
-# Fit a mixed model
-# =========================
+# ================================================
+# Fit a mixed model (Copula model)
+# ===============================================
 
 not_cont <- c(rep(0, 3), rep(1, 10))
 fit <- easybgm(data = data,          #(M) n*p matrix of fitponses (mandatory)
