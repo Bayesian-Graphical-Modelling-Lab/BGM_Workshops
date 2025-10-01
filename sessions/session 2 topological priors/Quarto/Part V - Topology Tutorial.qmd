@@ -40,13 +40,15 @@ library(BDgraph)
 compile_iter = 1e4
 ```
 
-# Recap: Parts I–III
+# Recap 
+
+## Parts I–III
 
 - In Part I, we explored why network models became a tool in psychology.  
 - In Part II, we saw how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence*.  
 - In Part III, we practiced the Bayesian workflow: testing edges, estimating parameters, visualizing uncertainty, and running sensitivity checks.  
 
-# Recap: Part IV — Priors as Models of Psychometric Topology
+## Part IV — Prior models of network topology
 
 In Part IV, we explored how a prior can encode ideas about network structures.  
 
@@ -61,7 +63,7 @@ In Part IV, we explored how a prior can encode ideas about network structures.
 :::
 
 
-# Intended Outcome of Part V
+## Goals for this session
 
 At the end of this session, you should be able to:
 
@@ -81,7 +83,7 @@ At the end of this session, you should be able to:
 
 - **Interpret** posterior results in light of prior assumptions, with particular attention to:  
   – how the Beta–Bernoulli prior redistributes weight over sparse, medium, and dense networks,  
-  – how the SBM prior can reveal clusters and bridge symptoms, and  
+  – how the SBM prior can reveal clusters, and  
   – when a prior favors sparse versus dense structures.
 :::
 
@@ -101,7 +103,7 @@ These simulations prepare us to identify their structural assumptions and to exp
 
 ::: {.panel-tabset}
 
-### 1.1.1 Simulating the Bernoulli Prior
+### Simulating the Bernoulli Prior
 
 Under Bernoulli(π), each edge is included independently with fixed probability π.  
 This exercise helps us **identify the structural assumptions** of this prior.
@@ -220,9 +222,24 @@ for (k in 1:4) {
 :::
 
 
+---
+
+::: {.callout-tip title="Explore interactively"}
+Want to see how different values of α and β shape the Beta distribution?  
+
+👉 Try this interactive Shiny app: [Beta Distribution Explorer](https://amshenao.shinyapps.io/FINAL/)  
+
+Move the sliders (tickers?) for α and β and observe:  
+- How the shape of the Beta distribution changes.  
+- Think what this will imply about the likely values of π,  
+- and how different α,β choices favor sparse vs dense networks.  
+:::
+
+---
+
 ::: {.panel-tabset}
 
-### 1.1.2 Simulating the Beta–Bernoulli Prior
+### Simulating the Beta–Bernoulli Prior
 
 Under a **Beta–Bernoulli(α,β)** prior:  
 - π is not fixed but drawn from a Beta distribution.  
@@ -343,16 +360,18 @@ for (k in 1:4) {
 
 :::
 
-::: {.callout-tip title="Explore interactively"}
-Want to see how different values of α and β shape the Beta distribution?  
+```{r, cache = TRUE}
+fit = bgm(Wenchuan, 
+          update_method = "adaptive-metropolis", 
+          iter = 1e4, 
+          edge_prior="Beta-Bernoulli",
+          display_progress = "none")
 
-👉 Try this interactive Shiny app: [Beta Distribution Explorer](https://amshenao.shinyapps.io/FINAL/)  
+adj = 1 * (fit$posterior_mean_indicator > .5)
+plot(igraph::graph_from_adjacency_matrix(adj, mode = "undirected"))
+```
 
-Move the sliders (tickers?) for α and β and observe:  
-- How the shape of the Beta distribution changes.  
-- Think what this will imply about the likely values of π,  
-- and how different α,β choices favor sparse vs dense networks.  
-:::
+
 
 
 ## 1.2. Priors over structures and network complexity
@@ -500,8 +519,7 @@ To see how this plays out in real data, we now turn to an applied analysis where
 
 ## 1.3. Applied analysis: choosing an appropriate prior
 
-In practice, the choice of prior is not just a technical detail.  
-It reflects your substantive expectations about the network: Is it relatively **sparse** or **dense**?
+The choice of prior reflects your substantive expectations about the network: Is it relatively **sparse** or **dense**?
 
 This exercise asks you to analyze the Wenchuan earthquake PTSD dataset and justify your prior choice, using both your own expectations and evidence from comparable networks.
 
@@ -599,7 +617,7 @@ This exercise showed how prior choice reflects expectations about network sparsi
 Before we move on to clustering priors, we take a short theoretical detour:  
 how do priors adjust for the fact that in network analysis we test many possible edges at once?  
 
-## 1.4. Multiplicity correction in network priors
+## 1.4. [Optional] Multiplicity correction in network priors
 
 Suppose a network has  
 - $m = \tfrac{p(p-1)}{2}$ possible edges in total, and  
@@ -687,7 +705,7 @@ ggplot(df_long, aes(x = k, y = Odds, color = Prior, linetype = Type)) +
   the first few edges become increasingly unlikely, while very dense graphs become easy to complete.
 
 
-## 1.5. Bonus: Multiple testing in Bayesian statistics
+### Multiple testing in Bayesian statistics
 
 In frequentist statistics, the *multiple testing problem* arises because if we test many hypotheses at level $\alpha = 0.05$, we expect about 5% false positives by chance. Corrections (e.g., Bonferroni, FDR) raise the threshold for discovery, reducing false positives but inflating false negatives. Importantly, frequentist methods cannot provide support for the null; they can only fail to reject it.
 
@@ -722,7 +740,7 @@ To capture such patterns, we need priors that go beyond edge probability and net
 We now turn to the **Stochastic Block Model**, which allows us to encode clustering directly into the prior.
 
 
-# 2. The Stochastic-Block Model and Network Clustering
+# 2. The Stochastic-Block Model
 
 So far, we have focused on modeling **sparsity and density** using network priors:  
 - The **Bernoulli prior** fixes an edge probability π.  
@@ -738,10 +756,11 @@ The **Stochastic Block Model (SBM)** addresses this by placing a prior directly 
 - The probability of an edge between two nodes depends on the blocks to which they belong.  
 
 **Goals for this section**  
-- Understand how the SBM prior encodes clustering.  
-- Learn the Bayesian workflow for estimating networks under the SBM prior.  
-- Apply the SBM to real data and interpret the clustering output.  
-- Reflect on how to set and justify hyperparameters such as *λ* (expected number of clusters).
+- **Build intuition** for how the SBM prior generates clusters by simulating networks with different block sizes and connection patterns.  
+- **Understand the Bayesian workflow** for estimating networks under the SBM prior, including posterior cluster probabilities and Bayes factors.  
+- **Apply the SBM** to real psychological data and evaluate competing clustering hypotheses using Bayes factors.  
+- **Interpret clustering output** (e.g., Dahl allocations, co-clustering matrices).  
+- **Reflect on prior specification**: how to set and justify hyperparameters such as λ (expected number of clusters) and α, β (beliefs about within- vs. between-cluster connectivity).
 
 
 ## 2.1 Building intuition: simulated SBM networks
@@ -848,7 +867,7 @@ for (k in 1:4) {
 
 From the simulations we learned:  
 - The SBM prior encodes **clustering structure** by assuming higher within-block and lower between-block edge probabilities.  
-- Larger blocks make clusters more clearly detectable, highlighting that cluster detection depends on the number of nodes (*p*), not the sample size (*n*).  
+- Larger blocks make clusters more clearly detectable, highlighting that cluster detection depends on the number of nodes (*p*).  
 - The SBM differs from earlier priors by shaping *where* edges appear, not only *how many*.  
 
 With this intuition in hand, we now connect it to the **Bayesian SBM model**: how the prior is specified, how estimation works in practice, and how we can apply it to psychological data.
@@ -857,35 +876,29 @@ With this intuition in hand, we now connect it to the **Bayesian SBM model**: ho
 
 ## 2.2 The Stochastic Block Model as Network Prior
 
-The simulations showed how SBM priors generate clustered networks.  
-We now connect this intuition to the **Bayesian model** used for estimation.  
-
 ### The generative model
 
+We can now formalize what you already saw in the simulation exercise:  
+
 1. **Block assignments**  
-   - Each node is assigned to one of several latent blocks (clusters).  
-   - The model places a probability distribution over possible assignments, so that each node is assigned to block $b$ with some probability.  
-   - This means that the block structure is not fixed in advance, but learned from the data during inference.
+   - Each node is assigned to a latent block (cluster).  
+   - This is random: the model places a distribution over assignments.  
+   - In our earlier code, this was the line where we sampled the block membership for each node.
 
 2. **Edge probabilities**  
-   - For each pair of blocks $(a,b)$, the probability of an edge between nodes in those blocks is drawn from a Beta distribution.  
-   - Conditional on this probability, each edge is then sampled as Bernoulli.  
-   - In other words, **every within-block or between-block set of relations follows a Beta–Bernoulli model**, just like the ones we studied earlier.  
-   - The difference is that instead of one global $\pi$ for all edges, the SBM places a separate Beta–Bernoulli prior on each block-to-block connection pattern.
+   - For each block pair $(a,b)$, an edge probability $\pi_{ab}$ is drawn from a Beta distribution.  
+   - Each within-block and between-block connection set follows a **Beta–Bernoulli model**, just like the priors we studied before.  
+   - In our code, this was where we set a high $\pi$ for within-block edges (e.g., 0.6) and a low $\pi$ for between-block edges (e.g., 0.1).
 
 3. **Edges**  
-   - Once blocks have been assigned and block-to-block probabilities $\pi_{ab}$ have been drawn, each possible edge is sampled as Bernoulli($\pi_{ab}$).  
-   - This is exactly the same Bernoulli step we saw earlier, but now the success probability depends on the blocks of the two nodes.  
-   - Put differently: **an SBM network is built from many local Beta–Bernoulli priors**, one for each pair of blocks, which together generate the entire network.
+   - Once block memberships and block-to-block probabilities are set, each possible edge is sampled as Bernoulli($\pi_{ab}$).  
+   - This is the same Bernoulli mechanism as before — but now $\pi$ depends on which blocks the two nodes belong to.  
+   - Put differently: an SBM is a hierarchy of many **local Beta–Bernoulli priors**, one for each block pair.
 
-This hierarchy means that:  
-- Networks inherit **clustering structure** from the block assignments.  
-- Both the number of clusters and the block-to-block edge probabilities are treated as random variables; they are not fixed in advance but are estimated from the data.
-
+In the Bayesian SBM, both the number of clusters and the block-to-block edge probabilities are treated as random, learned from the data rather than fixed in advance.  
 
 ### Hyperparameters
-
-The SBM prior extends the ideas from the Bernoulli and Beta–Bernoulli priors by introducing parameters that govern clustering as well as density:
+This introduces new hyperparameters that govern clustering as well as density:
 
 - **λ (lambda):** controls the prior on the number of clusters.  
   *Interpretation:* this plays a role similar to π in the Bernoulli prior — it encodes how complex we expect the network structure to be, but here in terms of clusters rather than edges.  
@@ -920,10 +933,6 @@ The SBM prior extends the ideas from the Bernoulli and Beta–Bernoulli priors b
   In practice, we almost always leave this parameter at its default value of 1.  
   That choice corresponds to a neutral prior: all partitions of nodes are equally likely, without preferring equal or unequal clusters.
 
-### Key difference
-
-Unlike the Bernoulli and Beta–Bernoulli priors, which govern overall edge density,  
-the SBM prior makes assumptions about **organization**: which nodes are likely to connect, based on latent clusters.
 
 ## 2.3 Bayesian workflow for SBM analysis
 
@@ -942,8 +951,8 @@ Here is the workflow:
 library(bgms)
 
 fit_sbm <- bgm(
-  x = Wenchuan,                           # data
-  update_method = "adaptive-metropolis", # use metropolis for speed
+  x = data,                           
+  update_method = "adaptive-metropolis",  # use metropolis for speed
   iter = 1e4,                             # increase iterations for metropolis
   edge_prior = "Stochastic-Block",        # stochastic block model prior
   lambda = 1.5936,                        # expected 2 clusters
@@ -965,9 +974,9 @@ fit_sbm$posterior_num_blocks
 ### Step 3: Compute posterior odds
 From `posterior_num_blocks`, compute the posterior odds of one clustering hypothesis vs. another:  
 
-\[
+$$
 \text{Posterior odds} = \frac{P(B = b_1 \mid \text{data})}{P(B = b_2 \mid \text{data})}
-\]
+$$
 
 For example, you can extract posterior probabilities from `fit_sbm$posterior_num_blocks`:  
 
@@ -991,15 +1000,15 @@ For example, you can extract posterior probabilities from `fit_sbm$posterior_num
 
 The prior on the number of clusters $B$ follows a **truncated Poisson** distribution with rate parameter λ:  
 
-\[
-P(B = b) = \frac{e^{-\lambda}\, \lambda^b / b!}{1 - e^{-\lambda}}, \quad b = 1, 2, \ldots
-\]
+$$
+P(B = b) = \frac{e^{-\lambda}\, \lambda^b}{b!}\, \frac{1}{1 - e^{-\lambda}}, \quad b = 1, 2, \ldots
+$$
 
 From this, the prior odds are:  
 
-\[
+$$
 \text{Prior odds} = \frac{P(B = b_1)}{P(B = b_2)}.
-\]
+$$
 
 #### Case 1: Point hypotheses
 For example, comparing 2 vs 1 cluster:  
@@ -1022,9 +1031,9 @@ prior_odds_2v1 <- prior2 / prior1
 #### Case 2: Range hypotheses
 For example, comparing “two or more clusters” vs “one cluster”:  
 
-\[
+$$
 P(B \geq 2) = 1 - P(B=1) = 1 - \frac{\lambda}{e^{\lambda}-1}.
-\]
+$$
 
 ```r
 # Prior probability of 1 cluster
@@ -1041,9 +1050,9 @@ prior_odds_ge2v1 <- prior_ge2 / prior1
 
 Bayes factors compare posterior odds with prior odds:  
 
-\[
+$$
 BF_{b_1,b_2} \;=\; \frac{\text{Posterior odds}}{\text{Prior odds}}.
-\]
+$$
 
 ---
 
@@ -1101,7 +1110,7 @@ BF_3v2
 
 ## 2.4 Empirical Example: Boredom, Curiosity, and Exploration
 
-We now turn to an empirical example from Martarelli, Ballifard, and Audrin (2023).  
+We now turn to an empirical example from [Martarelli, Ballifard, and Audrin (2023)](https://github.com/Bayesian-Graphical-Modelling-Lab/BGM_Workshops/blob/5thFSoIM/sessions/session%202%20topological%20priors/Martarelli%20Ballifard%20Audrin%202023.pdf).  
 The authors aimed to:  
 
 1. Validate the French translation of the **Short Boredom Proneness Scale (SBPS)**.  
@@ -1124,7 +1133,7 @@ data_boredom = read.csv2("https://raw.githubusercontent.com/Bayesian-Graphical-M
 
 ### Assignment
 
-Your task is to test the clustering hypotheses from \textcite{martarelli2022} using the Bayesian SBM.
+Your task is to test the clustering hypotheses from Martarelli, Ballifard, and Audrin (2023) using the Bayesian SBM.
 
 1. **Specify prior expectations:**  
    - Choose $\lambda$ to reflect the expected number of clusters (the authors expected 3).  
@@ -1141,11 +1150,17 @@ Your task is to test the clustering hypotheses from \textcite{martarelli2022} us
    *Goal: see whether the data support 1, 2, or 3 clusters.*  
 
 4. **Compute clustering Bayes factors:**  
-   Compare:  
-   - $H_0$: one cluster  
+   Start by testing whether the data support clustering at all:  
+
+   - $H_0$: one cluster (no clustering)  
+   - $H_1$: two or more clusters (evidence for clustering)  
+
+   Then, compare specific hypotheses of interest:  
+
    - $H_1$: two clusters  
-   - $H_2$: three clusters  
-   *Goal: quantify evidence for 2 vs 3 clusters (the authors’ expectation).*  
+   - $H_2$: three clusters (the authors’ expectation)  
+
+   *Goal: first establish whether clustering is present, then evaluate whether the expected three-domain structure is supported over two domains.*
 
 ---
 
@@ -1173,19 +1188,23 @@ fit_sbm_boredom <- bgm(
 fit_sbm_boredom$posterior_num_blocks
 
 # 👉 Tasks:
-# - Extract p1, p2, p3 (posterior probabilities for 1, 2, 3 clusters).
-# - Compute prior1, prior2, prior3 from truncated Poisson(λ = 2.821439).
+# - Extract p1, p2, p3, and p_ge2 (posterior probabilities for 1, 2, 3, ≥2 clusters).
+# - Compute prior1, prior2, prior3, and prior_ge2 from truncated Poisson(λ = 2.821439).
 # - Calculate Bayes factors:
-#     BF(2 vs 1), BF(3 vs 2), BF(≥2 vs 1).
+#     BF(≥2 vs 1), BF(2 vs 1), BF(3 vs 2).
 ```
-
-Reflection questions:  
-- Which hypothesis (2 vs 3 clusters) receives strongest support?  
-- Does the Bayesian analysis reproduce or challenge the Walktrap findings?  
-- How sensitive are your conclusions to the choice of λ?  
 
 ---
 
+**Reflection questions**  
+- Is there evidence for clustering at all (≥2 vs 1)?  
+- If clustering is present, which hypothesis (2 vs 3 clusters) receives strongest support?  
+- Do the Bayesian results reproduce or challenge the Walktrap findings?  
+- How sensitive are your conclusions to the choice of λ?
+
+---
+
+### Solution
 ### Solution
 
 ```r
@@ -1202,34 +1221,34 @@ fit_sbm_boredom <- bgm(
 )
 
 # Step 2: Posterior probabilities
-p1   <- fit_sbm_boredom$posterior_num_blocks[1,1]       # P(B=1 | data)
-p2   <- fit_sbm_boredom$posterior_num_blocks[2,1]       # P(B=2 | data)
-p3   <- fit_sbm_boredom$posterior_num_blocks[3,1]       # P(B=3 | data)
+p1    <- fit_sbm_boredom$posterior_num_blocks[1,1]       # P(B=1 | data)
+p2    <- fit_sbm_boredom$posterior_num_blocks[2,1]       # P(B=2 | data)
+p3    <- fit_sbm_boredom$posterior_num_blocks[3,1]       # P(B=3 | data)
 p_ge2 <- sum(fit_sbm_boredom$posterior_num_blocks[-1,1]) # P(B≥2 | data)
 
 # Step 3: Prior probabilities from truncated Poisson(λ)
 lambda <- 2.821439
-prior1  <- dpois(1, lambda) / (1 - exp(-lambda))
-prior2  <- dpois(2, lambda) / (1 - exp(-lambda))
-prior3  <- dpois(3, lambda) / (1 - exp(-lambda))
+prior1    <- dpois(1, lambda) / (1 - exp(-lambda))
+prior2    <- dpois(2, lambda) / (1 - exp(-lambda))
+prior3    <- dpois(3, lambda) / (1 - exp(-lambda))
 prior_ge2 <- 1 - prior1
 
 # Step 4: Bayes factors
-BF_2v1   <- (p2/p1)   / (prior2/prior1)       # evidence: 2 vs 1 cluster
-BF_3v2   <- (p3/p2)   / (prior3/prior2)       # evidence: 3 vs 2 clusters
-BF_ge2v1 <- (p_ge2/p1) / (prior_ge2/prior1)   # evidence: ≥2 vs 1 cluster
+BF_ge2v1 <- (p_ge2/p1) / (prior_ge2/prior1)   # clustering vs no clustering
+BF_2v1   <- (p2/p1)   / (prior2/prior1)       # 2 vs 1 cluster
+BF_3v2   <- (p3/p2)   / (prior3/prior2)       # 3 vs 2 clusters
 
-BF_2v1; BF_3v2; BF_ge2v1
+BF_ge2v1; BF_2v1; BF_3v2
 ```
 
 **Interpretation**  
-- $BF_{2,1}$: Is there evidence for 2 clusters over 1?  
-- $BF_{3,2}$: Does the data support 3 separate domains (authors’ hypothesis) vs. 2 domains (Walktrap result)?  
-- $BF_{\geq 2,1}$: General evidence for clustering vs. no clustering at all.  
+- $BF_{\geq 2,1}$: Evidence for clustering vs. no clustering at all.  
+- $BF_{2,1}$: Evidence for 2 clusters over 1.  
+- $BF_{3,2}$: Evidence for 3 separate domains (authors’ hypothesis) vs. 2 domains (Walktrap result).  
 
 :::
 
-## 2.5 (Optional) Inspecting node-level clustering
+## 2.5 [Optional] Inspecting node-level clustering
 
 If time permits, we can go one step further:  
 looking not only at the number of clusters, but also at **how nodes are assigned to them**.
@@ -1284,11 +1303,7 @@ pheatmap(fit_sbm_boredom$posterior_mean_coclustering_matrix,
 
 ---
 
-
-
-
-
-#3 Bonus: Using LLMs for Prior Specification
+# Bonus: Using LLMs for Prior Specification
 
 Up to now, we have specified priors either by hand (choosing π, α, β, λ) or by using defaults.  
 But what if we could **automate prior elicitation** by using existing scientific knowledge?  
