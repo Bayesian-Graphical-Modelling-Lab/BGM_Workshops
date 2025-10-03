@@ -38,10 +38,26 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Recap 
 
+So far in the workshop, you have learned how to:
+
+- **Estimate** networks within a single group  
+  - Using Bayesian methods implemented in `bgms`, `BGGM`, and `BDgraph`.  
+  - Interpreting posterior edge inclusion, parameter uncertainty, and network structure.  
+
+- **Evaluate** prior assumptions about network topology  
+  - Bernoulli, Beta–Bernoulli, and Stochastic Block Models.  
+  - Understanding how priors affect posterior edge probabilities, density, and clustering.  
+
+- **Interpret** Bayesian results in terms of  
+  - Evidence for and against individual edges,  
+  - Precision of parameter estimates,  
+  - Influence of prior choices on conclusions.
+
+---
 
 ## Goals for this session
 
-At the end of this session, you should be able to:
+We now extend these ideas to the case of **two (or more) groups**. At the end of this session, you should be able to:
 
 ::: {.goals}
 - **Identify** situations where group comparisons of networks are relevant.  
@@ -62,6 +78,11 @@ At the end of this session, you should be able to:
 
 - **Interpret** Bayes factors for individual edges in terms of evidence for invariance or difference, and relate these edge-level results to conclusions about the overall network structure.
 :::
+
+This session builds directly on your earlier skills:  
+- From estimating a single network → to comparing networks across groups.  
+- From studying priors on topology → to priors on group differences.
+
 
 ::: {.note}
 **Recommended Reading:**

@@ -1,0 +1,833 @@
+---
+title: "Part VII: MCMC diagnostics for bgms"
+author: "Maarten Marsman"
+date: "2025-10-03"
+format:
+  html:
+    css:
+     - font-awesome.min.css
+     - ajohnson.css
+    include-in-header: 
+      - text: |
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    code-fold: true
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    df-print: paged
+    self-contained: true
+engine: knitr
+---
+
+::: {.callout-tip title="Workshop Roadmap"}
+**You are here:**
+
+📜 Part I — History: Why Bayesian network analysis became necessary ✅\
+📘 Part II — Theory: How to quantify evidence for edge inclusion or exclusion ✅\
+🔧 Part III — Practice: Basics of the Bayesian workflow ✅\
+🎯 Part IV — Theory: Priors as models of psychometric topology ✅\
+🧩 Part V — Practice: Evaluating the influence of network priors ✅\
+👥 Part VI — Practice: The Bayesian approach to group comparisons ✅\
+🔍 **Part VII — Practice: MCMC diagnostics for bgms**
+:::
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Recap
+
+So far in the workshop, you have learned how to:
+
+-   **Estimate** networks in single groups and across groups
+    -   Using Bayesian methods in `bgms`, `BGGM`, and `BDgraph`.\
+    -   Interpreting posterior edge inclusion, parameter uncertainty, and group differences.
+-   **Evaluate** prior assumptions about network topology
+    -   Bernoulli, Beta–Bernoulli, and Stochastic Block Models.\
+    -   Understanding how priors influence edge probabilities, density, and clustering.
+-   **Test** hypotheses about invariance and differences
+    -   Using Bayes factors derived from Savage–Dickey ratios and model averaging.\
+    -   Assessing edge-level evidence and interpreting global network comparisons.
+
+------------------------------------------------------------------------
+
+## Goals for this session
+
+We now turn to **checking the reliability of MCMC output and model adequacy**. At the end of this session, you should be able to:
+
+::: goals
+-   **Explain** the difference between bias reduction (warmup) and variance reduction (sampling), and how these are handled in `bgms`.
+
+-   **Compute** and **interpret** MCMC diagnostics:\
+    – $\hat{R}$ for convergence,\
+    – Effective sample size (ESS) for precision.
+
+-   **Compare** Metropolis vs. NUTS in terms of warmup scheme, efficiency, and diagnostics.
+
+-   **Investigate** diagnostics for selection variables (indicators and pairwise effects).
+:::
+
+This session builds directly on your earlier skills:\
+- From estimating and comparing networks → to evaluating the quality of the chains that generate those estimates.
+
+::: note
+**Recommended Reading:**
+
+-   Margossian, C., & Gelman, A. (2024). For how many iterations should we run Markov chain Monte Carlo? Preprint arXiv:2311.02726v2. doi: 10.48550/arXiv.2311.02726
+
+**Optional Reading**
+
+-   Vehtari, A., Gelman, A., Simpson, D., Carpenter, B., & Bürkner, P.-C. (2021). Rank-normalization, folding, and localization: An improved $\hat{R}$ for assessing convergence of MCMC. *Bayesian Analysis*, *16*, 667–718. doi: 10.1214/20-BA1221
+
+**R Setup Tip**\
+Make sure to install and load the following libraries before running the examples:
+
+``` r
+library(bgms)
+library(ggplot2)
+```
+:::
+
+## 1. Motivation
+
+Bayesian network analysis relies on **Markov chain Monte Carlo (MCMC)** to approximate posterior distributions.
+
+A **Markov chain** is a stochastic process where each new state depends only on the current state.\
+In **MCMC**, we use such a chain to generate dependent draws. At the start, these draws depend heavily on the initial values.
+
+Over time, if the algorithm is well-behaved, the influence of the starting point *washes out*. The distribution of the draws settles into a stable *pattern* that no longer changes from one step to the next.
+
+This stable long-run distribution is called the **stationary distribution**.
+
+-   For MCMC, in our case, the stationary distribution is the **posterior distribution** we want to approximate.\
+-   *Convergence* means that the chain has reached this stationary state.\
+-   Only after convergence can we use the draws to summarize the posterior.
+
+---
+
+Unlike direct simulation (e.g., using `rnorm` or `rbinom`), MCMC does not give independent draws from the posterior.
+
+MCMC samples are:\
+- **Dependent** — each draw is generated from the previous state of the chain.\
+- **Approximate** — the chain only approaches the true posterior after some iterations.
+
+This raises two key questions:\
+1. **Convergence (bias):** Has the chain reached the stationary posterior distribution?\
+2. **Precision (variance):** Have we collected enough *effectively independent* samples to summarize the posterior reliably?
+
+In short: *Did the chain converge?* and *Do we have enough information after convergence?*
+
+------------------------------------------------------------------------
+
+## Assignment: Match Traceplots to Posteriors
+
+The figure below shows three traceplots (A–C) and three posterior distributions (1–3).\
+Each traceplot comes from a different Markov chain, and each posterior is the distribution estimated from that chain.
+
+**Your task:** Match each traceplot to its corresponding posterior distribution.
+
+```{r}
+set.seed(42)
+
+# True posterior: Beta(7,17)
+alpha <- 7; beta <- 17
+n_draws <- 2000
+
+# --- Chains ---
+# Scenario 1: Autocorrelated + bad start
+chain1 <- numeric(n_draws)
+chain1[1] <- 0.9
+for (i in 2:n_draws) {
+  chain1[i] <- chain1[i-1] + rnorm(1, 0, 0.01)
+  chain1[i] <- min(max(chain1[i], 0), 1)
+}
+
+# Scenario 2: Perfect
+chain2 <- rbeta(n_draws, alpha, beta)
+
+# Scenario 3: Drift
+chain3 <- rbeta(n_draws, alpha, beta) + seq(0, 0.5, length.out=n_draws)
+chain3 <- pmin(chain3, 1)
+
+# Densities
+dens1 <- density(chain1, from=0, to=1)
+dens2 <- density(chain2, from=0, to=1)
+dens3 <- density(chain3, from=0, to=1)
+
+# True posterior
+true_x <- seq(0, 1, length=200)
+true_y <- dbeta(true_x, alpha, beta)
+
+# Layout
+layout(matrix(c(1,4,2,5,3,6), ncol=2, byrow=TRUE))
+par(cex=1, mar=c(4,4,2,1))
+
+# --- Traceplots ---
+plot(chain1, type="l", col="steelblue", main="Traceplot A",
+     xlab="", ylab="", axes=FALSE, ylim = c(0,1))
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("Number of Iterations", side=1, line=2.5, cex = 1.7)
+mtext("Sampled Value", side=2, line=2.5, cex = 1.7)
+
+plot(chain2, type="l", col="steelblue", main="Traceplot B",
+     xlab="", ylab="", axes=FALSE, ylim = c(0,1))
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("Number of Iterations", side=1, line=2.5, cex = 1.7)
+mtext("Sampled Value", side=2, line=2.5, cex = 1.7)
+
+plot(chain3, type="l", col="steelblue", main="Traceplot C",
+     xlab="", ylab="", axes=FALSE, ylim = c(0,1))
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("Number of Iterations", side=1, line=2.5, cex = 1.7)
+mtext("Sampled Value", side=2, line=2.5, cex = 1.7)
+
+# --- Posterior densities ---
+plot(true_x, true_y, type="l", lwd=3, col="black",
+     main="Posterior 1", xlab="", ylab="", axes=FALSE, ylim=c(0,12))
+lines(dens3, col="orange", lwd=2)
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("theta", side=1, line=2.5, cex = 1.7)
+mtext("Density", side=2, line=2.5, cex = 1.7)
+
+plot(true_x, true_y, type="l", lwd=3, col="black",
+     main="Posterior 2", xlab="", ylab="", axes=FALSE, ylim=c(0,12))
+lines(dens1, col="red", lwd=2)
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("theta", side=1, line=2.5, cex = 1.7)
+mtext("Density", side=2, line=2.5, cex = 1.7)
+
+plot(true_x, true_y, type="l", lwd=3, col="black",
+     main="Posterior 3", xlab="", ylab="", axes=FALSE, ylim=c(0,12))
+lines(dens2, col="forestgreen", lwd=2)
+axis(1, cex.axis=1.2); axis(2, las=1, cex.axis=1.2)
+mtext("theta", side=1, line=2.5, cex = 1.7)
+mtext("Density", side=2, line=2.5, cex = 1.7)
+```
+
+::: panel-tabset
+### Tasks
+
+-   **Learning Goal 1 (Warmup vs. Sampling):**\
+    Which chain is **moving too slowly and still looks influenced by where it started**?
+
+-   **Learning Goal 2 (Diagnostics):**\
+    Which chain shows a **systematic drift** over time, and what would $\hat{R}$ or ESS reveal about it?
+
+-   **Learning Goal 2 (Diagnostics):**\
+    Which chain seems to have **settled well** into the target distribution?
+
+-   **Learning Goal 2 (Diagnostics):**\
+    How do these problems show up in the **estimated posteriors** compared to the true posterior (black curve)?
+
+### Try it
+
+Discuss in small groups for 5–10 minutes.\
+Focus on:  
+  - Does the chain explore the full plausible range, or does it remain stuck or drifting?\
+  - Do the posterior estimates line up with the black curve (the true posterior)?\
+  - What consequences would these chain behaviors have for interpreting results?
+
+### Solution
+
+**Traceplot B → Posterior 3:** Well-behaved chain. It explores freely and the posterior matches the truth.\
+**Traceplot A → Posterior 2:** Still influenced by its starting point; slow to move. Posterior estimate biased.\
+**Traceplot C → Posterior 1:** Shows systematic drift. Posterior estimate shifted away from the truth.
+
+**Takeaway messages:**\
+- A chain must both **forget its starting point** (warmup → convergence) and **move freely** around the posterior (good mixing).\
+- If either condition fails, posterior inference is misleading.
+:::
+
+------------------------------------------------------------------------
+
+### Warmup vs. Sampling
+
+MCMC sampling has two distinct phases:
+
+-   **Warmup (burn-in):**\
+    Early iterations are used to adapt the sampler and move the chain toward the stationary posterior.\
+    These draws are discarded because they still reflect the starting values.
+
+-   **Sampling phase:**\
+    Once adaptation has stabilized, subsequent iterations are kept for inference.
+
+    -   **Number of samples:** more samples generally mean more precise estimates.\
+    -   **Effective sample size (ESS):** accounts for the dependence between MCMC draws.\
+        ESS tells us how many independent samples would provide the same amount of information as the dependent MCMC draws.
+
+------------------------------------------------------------------------
+
+### Diagnostics
+
+-   $\mathbf{\hat{R}}$ (potential scale reduction statistic):\
+    Compares variation *within chains* to variation *between chains*.
+    -   $\hat{R} \approx 1$: chains have converged to the same distribution.\
+    -   In practice, $\hat{R} < 1.01$ (Vehtari et al., 2021) is recommended as the threshold.
+-   **Effective sample size (ESS):**\
+    A statistic that measures the *information content* of the chain.
+    -   Larger ESS → more reliable, precise estimates.\
+    -   Smaller ESS → more noisy estimates.
+
+------------------------------------------------------------------------
+
+## Assignment: Inspecting Chains in `bgms`
+
+Let’s see how these ideas look in practice with `bgms`. We will fit a model **without edge selection** (`edge_selection = FALSE`), so the sampler only estimates parameters.
+
+::: panel-tabset
+### Tasks
+
+-   **Fit `bgm` with `edge_selection = FALSE` on the ADHD dataset.**\
+    → *Learning Goal 2: Compute and interpret MCMC diagnostics for bgms output.*
+
+-   **Produce traceplots for a few parameters.**\
+    → *Learning Goal 2: Visualize chain behavior and assess convergence by eye.*
+
+-   **Use the summary object to inspect** $\hat{R}$ and ESS values.\
+    → *Learning Goal 2: Interpret diagnostics as measures of convergence (*$\hat{R}$) and information content (ESS).
+
+-   **Decide:**
+
+    -   Do the chains look like they have converged?\
+        → *Learning Goal 1: Recognize when warmup has succeeded and chains are stationary.*\
+    -   Do the $\hat{R}$ agree?\
+        → *Learning Goal 2: Use* $\hat{R}$ as a convergence check across chains.\
+    -   Are the effective sample sizes large or small?\
+        → *Learning Goal 2: Judge the adequacy of precision via ESS.*
+
+### Try it
+
+Fit a `bgm` model on the ADHD dataset with `edge_selection = FALSE`. Then:
+
+1.  Produce **traceplots** for 2–4 parameters.\
+2.  Run `summary(fit)` and inspect the reported $\hat{R}$ and ESS values.
+
+Use the outputs to answer these questions: - Do the traceplots suggest the chains have converged?\
+- Are the $\hat{R}$ values close to 1?\
+- Are the effective sample sizes large enough to trust the estimates?
+
+Here is some example code to scaffold your work:
+
+```{r, eval = FALSE}
+library(bgms)
+
+# Fit model without edge selection
+fit = bgm(ADHD, edge_selection = FALSE)
+
+# Inspect convergence diagnostics
+summary(fit)
+
+# Traceplots for some parameters
+main_samples = do.call(rbind, fit$raw_samples$main)
+colnames(main_samples) = fit$raw_samples$parameter_names$main
+pairwise_samples = do.call(rbind, fit$raw_samples$pairwise)
+colnames(pairwise_samples) = fit$raw_samples$parameter_names$pairwise
+
+plot(pairwise_samples[, 1], type = "l")
+```
+
+### Solution
+
+-   **Traceplots**\
+    Well-behaved chains should look like “fat hairy caterpillars” that wander freely across the posterior range.\
+    If chains stay stuck, drift over time, or show very different ranges, that suggests non-convergence.
+
+-   $\hat{R}$ values\
+    Numbers very close to 1 (typically \< 1.01) indicate that the chains are sampling from the same distribution.\
+    If $\hat{R}$ is noticeably larger than 1, convergence is doubtful.
+
+-   **Effective sample sizes (ESS)**\
+    Larger ESS means more information and smaller Monte Carlo error.\
+    Small ESS indicates the estimates are less precise and may not be trustworthy.
+:::
+
+------------------------------------------------------------------------
+
+**Takeaway:**\
+- Warmup reduces **bias**.\
+- The number of samples controls **precision**.\
+- ESS tells us how informative those samples actually are.\
+- $\hat{R}$ tells us whether chains have converged.
+
+------------------------------------------------------------------------
+
+### What if diagnostics are not satisfactory?
+
+-   **If** $\hat{R}$ is larger than 1.01\
+    → Chains have not mixed to the same distribution.
+    -   Increase the number of iterations.\
+    -   Run more chains with dispersed starting values.\
+    -   Consider switching to a more efficient sampler (e.g. NUTS instead of Metropolis).
+-   **If ESS is small**\
+    → The effective number of independent samples is too low for precise inference.
+    -   Increase the number of iterations.\
+    -   Reduce autocorrelation by using a more efficient sampler.
+
+------------------------------------------------------------------------
+
+## 2. MCMC Workflow & Control Parameters
+
+Every MCMC run follows a **workflow**:\
+1. **Initialization** – set starting values for each chain.\
+2. **Warmup (burn-in)** – adapt tuning parameters and move the chain toward the stationary posterior (draws are discarded).\
+3. **Sampling** – collect draws for inference once adaptation has finished.\
+4. **Diagnostics** – evaluate convergence ($\hat{R}$) and precision (ESS).
+
+How this workflow is carried out depends on the **control parameters** we choose:\
+- number of chains,\
+- number of iterations,\
+- length of warmup,\
+- and the type of update method (e.g., Metropolis or NUTS).
+
+------------------------------------------------------------------------
+
+### Stan-style Warmup Schedule in `bgms` for HMC and NUTS methods
+
+Warmup for HMC/NUTS in `bgms` is structured into **stages**:
+
+1.  **Stage 1 – Fast adaptation (\~7.5% of warmup)**
+    -   Adapt the step size quickly so the sampler begins to explore.
+2.  **Stage 2 – Adaptive windows**
+    -   Build doubling “windows” of increasing length (25, 50, ...).\
+    -   Within each window:
+        -   (Optional) Update the **mass matrix** to match posterior curvature.\
+        -   Refine the step size using dual averaging.
+3.  **Stage 3a – Final stabilization (\~last 10%)**
+    -   Stabilize the step size.\
+    -   Lock in the final mass matrix if estimated.
+4.  **Stage 3b – Edge selection adaptation (if enabled)**
+    -   Adapt the **proposal standard deviations** for Metropolis edge moves.
+5.  **Stage 3c – Final adjustments (if enabled)**
+    -   Make final adjustments of the global step size after edge adaptation.
+
+------------------------------------------------------------------------
+
+After these stages, **warmup ends** and the sampler enters the **sampling phase**.
+
+### Warmup for Metropolis (Random Walk proposals) in `bgms`
+
+In `bgms`, warmup for Metropolis-within-Gibbs is much simpler than for NUTS:
+
+-   **Adaptation goal:** learn suitable proposal standard deviations (step sizes) for the random walk updates.\
+-   **How:** use a Robbins–Monro adaptation scheme.
+    -   After each iteration, acceptance probabilities are used to adjust proposal scales.\
+    -   The update is weighted by a decaying factor (∝ iteration\^(-0.75)) so adaptation gradually stabilizes.\
+    -   Target acceptance rate is around 0.44 (standard for one-dimensional random walks).
+-   **End of warmup:** once the proposal scales have adapted, the sampler fixes them and begins the sampling phase.
+
+------------------------------------------------------------------------
+
+**Key difference from warmup for NUTS:**\
+- NUTS warmup involves multiple stages (step size tuning, mass matrix adaptation, final stabilization).\
+- Metropolis warmup is a single-stage process focused only on proposal standard deviations.
+
+In both cases, **warmup draws are discarded** because they reflect adaptation rather than stationary sampling.
+
+------------------------------------------------------------------------
+
+## Assignment: Relative efficiency MCMC procedures
+
+We now examine how these choices **show up in diagnostics**. The next exercises compare samplers and control parameters in terms of $\hat{R}$ (convergence) and ESS (information).
+
+**Goal:** With a short run, Metropolis may not reach satisfactory diagnostics, while NUTS often does.
+
+::: panel-tabset
+### Tasks
+
+-   **Fit the ADHD model twice (`edge_selection = FALSE`):** \  
+  1) `update_method = "metropolis"`,\ 
+  2) `update_method = "nuts"`.\
+      → *Learning Goal 3: Compare samplers (Metropolis vs. NUTS).*
+
+-   **Inspect diagnostics:** compare $\hat{R}$ and ESS in the summaries.\
+    → *Learning Goal 2: Compute and interpret MCMC diagnostics.*
+
+-   **Traceplots:** make traceplots for 2–4 parameters.\
+    → *Learning Goal 2: Use visual checks to assess convergence.*
+
+-   **Decide:**
+
+    -   Do the chains look converged?\
+        → *Learning Goal 1: Recognize when chains are stationary (post-warmup).*\
+    -   Are the $\hat{R}$ values close to 1 for both samplers?\
+        → *Learning Goal 2: Interpret* $\hat{R}$ as a convergence check.\
+    -   Which sampler yields larger ESS for the same number of iterations?\
+        → *Learning Goal 3: Assess relative efficiency in terms of ESS per iteration.*
+
+### Try it
+
+Run both samplers with a modest number of iterations (e.g., `iter = 1000`) so that differences are easy to spot.
+
+1.  Fit the model once with **Metropolis** and once with **NUTS** (`edge_selection = FALSE`).\
+2.  Call `summary(fit)` for each run and compare the reported $\hat{R}$ and ESS values.\
+3.  Produce traceplots for 2–4 parameters.
+
+Use these outputs to answer:\
+- Do the chains appear to have converged?\
+- Are the $\hat{R}$ values close to 1 for both samplers?\
+- Which sampler provides larger ESS for the same number of iterations?
+
+```{r, eval = FALSE}
+library(bgms)
+
+fit_met <- bgm(ADHD,
+               update_method   = "adaptive-metropolis",
+               edge_selection  = FALSE,
+               iter = 1000, 
+               seed = 4321)
+
+fit_nuts <- bgm(ADHD,
+                update_method   = "nuts",
+                edge_selection  = FALSE,
+                seed = 4321)
+
+summary(fit_met)
+summary(fit_nuts)
+```
+
+### Solution
+
+-   **Traceplots**
+    -   Metropolis chains often move slowly at 1,000 iterations and may not explore the full posterior range.\
+    -   NUTS chains typically mix more quickly and cover the posterior more efficiently.
+-   $\hat{R}$
+    -   For NUTS, values are usually close to 1.\
+    -   For Metropolis, some parameters may have $\hat{R} > 1.01$, indicating incomplete convergence.
+-   **ESS**
+    -   NUTS generally achieves a larger ESS at the same number of iterations.\
+    -   Metropolis requires more iterations to reach comparable ESS.
+
+**Takeaway message**\
+With short runs, NUTS is usually more efficient, showing better convergence ($\hat{R}$) and higher information content (ESS).\
+Metropolis can still reach satisfactory diagnostics, but only with longer chains or more careful control parameters.
+:::
+
+## Assignment B: Improving Metropolis via control parameters
+
+In the previous exercise, we saw that Metropolis underperformed at 1,000 iterations.\
+The goal here is to show that Metropolis diagnostics improve when we **increase the number of iterations and/or the number of chains**.
+
+::: panel-tabset
+### Tasks
+
+Building on the previous exercise (where Metropolis underperformed at 1,000 iterations), now examine how diagnostics improve when we adjust control parameters:
+
+-   **Refit with Metropolis only** (`edge_selection = FALSE`).\
+    → *Learning Goal 3: Compare samplers and understand when extra sampling is needed.*
+
+-   **Increase iterations** (e.g., from 1,000 → 4,000 or 8,000). Optionally **increase chains** (e.g., 4 → 6).\
+    → *Learning Goal 1: Recognize how sampling length and number of chains affect convergence and precision.*
+
+-   **Inspect diagnostics:** compare $\hat{R}$ and ESS across runs.\
+    → *Learning Goal 2: Interpret convergence and precision statistics in practice.*
+
+-   **Traceplots:** check whether the chains now look stable and overlapping.\
+    → *Learning Goal 2: Use visual checks alongside numerical diagnostics.*
+
+-   **Decide:**
+
+    -   Does $\hat{R}$ approach 1 as iterations (and/or chains) increase?\
+    -   Does ESS increase with more iterations?\
+    -   At what settings do diagnostics become satisfactory?\
+        → *Learning Goal 1 + 2: Link diagnostic outcomes directly to control parameter choices.*
+
+### Try it
+
+In the previous exercise, Metropolis did not perform well at 1,000 iterations.\
+Now rerun the model with **Metropolis only** and adjust the control parameters:
+
+1.  Increase the number of iterations (e.g., from 1,000 → 2,000 or 10,000).\
+2.  Optionally increase the number of chains (e.g., from 4 → 8).\
+3.  Inspect the $\hat{R}$ and ESS values in the summaries.
+
+Reflect on:\
+- Does $\hat{R}$ move closer to 1 as iterations and/or chains increase?\
+- Does ESS grow with longer runs?\
+- At what settings would you consider the diagnostics satisfactory?
+
+```{r, eval = FALSE}
+# Metropolis: longer chains
+fit_met_more_iter <- bgm(ADHD,
+                         update_method = "adaptive-metropolis",
+                         edge_selection = FALSE,
+                         chains = 4, 
+                         iter = 2000, 
+                         seed = 4321)
+                  
+
+# Metropolis: more chains
+fit_met_more_chains <- bgm(ADHD,
+                           update_method = "adaptive-metropolis",
+                           edge_selection = FALSE,
+                           chains = 8, 
+                           iter = 1000, 
+                           seed = 4321)
+                         
+
+summary(fit_met_more_iter)
+summary(fit_met_more_chains)
+```
+
+### Solution
+
+-   $\hat{R}$\
+    Moves closer to 1 as the number of iterations increases and when more chains are added.
+
+-   **ESS**\
+    Grows with longer runs; more iterations generally produce larger ESS values.
+
+-   **Traceplots**\
+    With more iterations, chains tend to overlap and appear stationary, indicating improved mixing.
+
+**Takeaway message**\
+Metropolis can achieve satisfactory diagnostics when control parameters are scaled appropriately.\
+Increasing iterations (and, when useful, chains) improves $\hat{R}$ and ESS, allowing Metropolis to approach the reliability of NUTS given sufficient sampling.
+:::
+
+------------------------------------------------------------------------
+
+### From general diagnostics to variable selection
+
+So far, we have studied MCMC diagnostics in general:\
+- Traceplots as a visual tool,\
+- $\hat{R}$ for convergence,\
+- ESS as a measure of information in dependent draws.
+
+But in `bgms`, our main interest is usually in **edge selection**:\
+- **Binary indicators** for edge inclusion/exclusion,\
+- **Spike–and–slab parameters**, e.g., the pairwise interactions, or their group differences, that are being selected by the indicators.
+
+```{r}
+library(ggplot2)
+
+# Parameters
+p <- 0.7   # inclusion probability (weight on slab)
+
+# Grid
+x <- seq(-4, 4, length.out = 500)
+
+# Slab density scaled by p
+slab <- p * dnorm(x, mean = 0, sd = 1)
+
+# Data for slab
+df_slab <- data.frame(x = x, density = slab)
+
+# Data for spike
+df_spike <- data.frame(x = 0, xend = 0, y = 0, yend = 1 - p)
+
+# Plot
+ggplot(df_slab, aes(x = x, y = density)) +
+  geom_line(color = "#D55E00", linewidth = 1.2) +
+  geom_segment(data = df_spike,
+               aes(x = x, xend = xend, y = y, yend = yend),
+               inherit.aes = FALSE,
+               color = "#0072B2", linewidth = 1.4, lineend = "butt") +
+  labs(x = "Parameter value", y = "Density", 
+       title = "Spike-and-Slab Prior") +
+  annotate("text", x = 0.1, y = 1 - p + 0.02, label = "Spike", color = "#0072B2", hjust = 0, size =6) +
+  annotate("text", x = 2, y = max(slab), label = "Slab", color = "#D55E00", hjust = 0,size=6) +
+  theme_minimal(base_size = 14)
+```
+
+
+
+To evaluate MCMC samples of them properly, we need to understand how $\hat{R}$ and ESS apply in this setting, and how we can derive effective sample sizes for these discrete or mixture-valued parameters.
+
+------------------------------------------------------------------------
+
+## 3. Diagnostics for Variable Selection Parameters
+
+So far, we have treated ESS and $\hat{R}$ in general.  
+In `bgms`, however, we care about **variable selection parameters**:
+
+- **Indicators** behave like a two-state Markov chain.  
+  - The chain can get “stuck” in 0 or 1 for long stretches.  
+  - This produces **high autocorrelation** $\Rightarrow$ low ESS.  
+
+- **Spike–and–slab parameters** are a mixture of a point mass (spike at zero when not selected) and a continuous slab (a density when selected).  
+  - Switching between spike and slab creates additional autocorrelation.  
+  - ESS can therefore often be low for these parameters as well.  
+
+- **Takeaway:** Even when $\hat{R} \approx 1$, ESS for variable selection parameters can be modest. This affects the *precision* of reported edge inclusion probabilities.  
+
+---
+
+### ESS for binary indicators
+
+<div class="describe">
+
+**Closed-form ESS for binary indicators**
+
+For a binary indicator $\gamma_t$, modelled as a two-state Markov chain with 
+transition probabilities $\hat{a} = \Pr(0 \to 1)$ and $\hat{b} = \Pr(1 \to 0)$:
+
+- Lag-1 autocorrelation: $\rho_1 = 1 - (\hat{a}+\hat{b})$.  
+- Autocorrelations decay geometrically: $\rho_k = \rho_1^k$.  
+- Integrated autocorrelation time:
+$$
+\tau_{\text{int}} = \frac{2 - (\hat{a}+\hat{b})}{\hat{a}+\hat{b}} .
+$$
+- Effective sample size:
+$$
+\mathrm{ESS}(\gamma) = \frac{T}{\tau_{\text{int}}}.
+$$
+</div>
+
+---
+
+### ESS for spike–and–slab parameters
+
+<div class="describe">
+
+**Delta method derivation for $\hat{\theta} = \hat{p}\cdot\hat{\mu}$**
+
+- Let $\hat{p}$ = posterior inclusion probability (from the indicator chain).  
+- Let $\hat{\mu}$ = conditional mean given inclusion.  
+- Our estimator of the marginal mean is
+$$
+\hat{\theta} = \hat{p}\,\hat{\mu}.
+$$
+
+By the delta method, treating $\hat{p}$ and $\hat{\mu}$ as approximately uncorrelated:
+
+$$
+\operatorname{Var}(\hat{\theta})
+\approx \hat{\mu}^2 \,\operatorname{Var}(\hat{p})
++ \hat{p}^2 \,\operatorname{Var}(\hat{\mu}).
+$$
+
+Thus the Monte Carlo standard error is
+
+$$
+\text{MCSE}(\hat{\theta}) =
+\sqrt{\hat{\mu}^2\,\text{MCSE}^2(\hat{p}) +
+      \hat{p}^2\,\text{MCSE}^2(\hat{\mu})}.
+$$
+
+Finally, since
+$$
+\text{MCSE}^2 = \frac{\text{Posterior Variance}}{\text{ESS}},
+$$
+we can solve for an **effective sample size for $\hat{\theta}$**:
+
+$$
+\text{ESS}_{\text{combined}} =
+\frac{\operatorname{Var}(\theta)}{\operatorname{Var}(\hat{\theta})}.
+$$
+</div>
+
+
+## Assignment: Investigate $\hat{R}$ and ESS for Selection Variables
+
+We now analyze the ADHD dataset **with edge selection** using `update_method = "nuts"`. The goal is to compare diagnostics for **binary indicators** and **spike–and–slab parameters** (i.e., the pairwise interactions).
+
+::: {.panel-tabset}
+
+### Tasks
+
+- **Fit** a `bgm` model on the ADHD dataset with  
+  `update_method = "nuts"` and `edge_selection = TRUE` (run multiple chains).  
+  → *Learning Goal 3: Apply samplers with edge selection enabled.*  
+
+- **Inspect the summary** for several edges:  
+  - Compare diagnostics ($\hat{R}$, ESS) for the **binary indicators** (edge inclusion), and the corresponding **spike–and–slab parameters** (pairwise interactions).  
+  - Note their posterior means.  
+  → *Learning Goal 2: Compute and interpret diagnostics in practice.*  
+
+- **Visualize chain behavior** with traceplots for the same edges.  
+  → *Learning Goal 2: Use visual checks to complement numerical diagnostics.*  
+
+- **Compare across parameter types:**  
+  - Are $\hat{R}$ values acceptable for both indicators and slabs?  
+  - Are ESS values systematically lower for indicators and spike–and–slab parameters than for other continuous parameters?  
+  - How do these diagnostics compare with the ESS values you obtained earlier **without selection**?  
+  → *Learning Goal 1 & 2: Connect diagnostics to the reliability of posterior summaries.*  
+
+### Try it
+
+1. Fit `bgm` with `update_method = "nuts"` and `edge_selection = TRUE` (e.g., `chains = 4`, a few thousand iterations).  
+2. Pull the two diagnostics tables:
+   - `summary(fit)$indicator`  → **Indicators** (edge inclusion).  
+   - `summary(fit)$pairwise`   → **Pairwise effects** (interaction parameters).  
+3. Pick 3–5 **matched edges** (same edge in both tables). Include
+   - at least one edge with inclusion ≈ 0 or ≈ 1 (to see constant indicators/NA diagnostics), and  
+   - at least one edge with inclusion in the middle (e.g., 0.2–0.8) to see switching.  
+4. Compare the diagnostics columns for those edges:
+   - `Rhat`, `n_eff` (ESS), and `mcse` (if reported).  
+5. Make **traceplots** for the same edges (both the indicator and the pairwise effect) and relate the plots to the numbers.
+
+**Guiding questions**
+- Which edges have the **lowest ESS** for **indicators**? For **pairwise effects**?  
+- Do the traceplots explain the ESS values (e.g., slow switching for pairwise effects)?  
+- Are the **$\hat{R}$** values acceptable (≈ 1), even when ESS is modest?  
+- Do any indicators show **constant 0 or 1** (hence NA diagnostics)? How does that relate to their pairwise effects?  
+- How do these diagnostics compare to your earlier run **without selection**?
+
+```{r, eval = FALSE}
+library(bgms)
+#no selection
+fit_nosel = bgm(ADHD,
+                update_method = "nuts",
+                edge_selection = FALSE,
+                chains = 4, 
+                iter = 1000, 
+                seed = 2025)
+#selection
+fit_sel = bgm(ADHD,
+              update_method = "nuts",
+              edge_selection = TRUE,
+              chains = 4, 
+              iter = 1000, 
+              seed = 2025)
+
+#summaries pairwise effects
+summary(fit_nosel)$pairwise
+summary(fit_sel)$pairwise
+
+#summaries indicators
+summary(fit_sel)$indicator
+```
+### Solution
+
+- **$\hat{R}$:** With NUTS and sufficient iterations, $\hat{R} \approx 1$ for both indicators and pairwise effects, showing convergence across chains.  
+
+- **ESS:**  
+  - Indicators can show **lower ESS** because they are two–state variables and the chain can dwell in 0 or 1 for long stretches.  
+  - Pairwise effects also can have **modest ESS**, reflecting the slow switching between spike and slab.  
+  - Continuous parameters such as thresholds usually achieve much higher ESS under the same run.  
+
+- **Traceplots:**  
+  - Pairwise effects also show sequences of exact zeros whenever the indicator is 0, 
+    and continuous variation (slab values) when the indicator is 1.
+    
+**Takeaway**  
+Even with an efficient sampler (NUTS) and acceptable $\hat{R}$, **ESS for indicators and pairwise effects can be modest**.  
+When interpreting results, always check MCSE alongside $\hat{R}$ and ESS, and if precision is insufficient, increase iterations or chains.  
+
+:::
+
+### Closing
+
+A key feature of `bgms` is that it reports $\hat{R}$ and ESS not only for continuous parameters,  
+but also for **selection variables** (indicators and pairwise effects).  
+
+As far as we know, this is the only implementation that provides full diagnostics  
+for these discrete and mixture-valued parameters. This makes it possible to:  
+
+- Evaluate convergence and mixing of selection variables,  
+- Quantify how much effective information underlies edge inclusion probabilities,  
+- Compare diagnostics across indicators, pairwise effects, and continuous parameters.  
+
+---
+
+### Take-home message
+
+This completes the **Bayesian workflow** for network models:  
+
+1. **Estimate** the model.  
+2. **Diagnose** the chains — check $\hat{R}$, ESS, and MCSE for all parameters,  
+   including indicators and pairwise effects.  
+3. **Interpret** results once diagnostics confirm reliability.  
+
+Diagnostics complete the Bayesian workflow: results should only be interpreted once the chains are shown to be reliable.

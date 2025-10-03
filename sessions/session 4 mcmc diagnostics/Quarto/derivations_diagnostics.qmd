@@ -1,0 +1,375 @@
+---
+title: "Derivations for Spike-and-Slab Summary Statistics"
+author: "Maarten Marsman"
+date: "2025-10-03"
+format:
+  html:
+    code-fold: true
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    df-print: paged
+    self-contained: true
+engine: knitr
+---
+
+# Overview
+
+This document provides a detailed mathematical foundation for the summary statistics and diagnostics used in spike-and-slab Bayesian models. We derive the effective sample size (ESS), Monte Carlo standard error (MCSE), and posterior summaries for both inclusion indicators and spike-and-slab parameters.
+
+------------------------------------------------------------------------
+
+# 1. Indicator Variables as Two-State Markov Chains
+
+Let $\{ \gamma_t \}_{t=1}^T$ be a binary time series sampled via MCMC where each $\gamma_t \in \{0, 1\}$ indicates whether a parameter is included (1) or excluded (0) at iteration $t$.
+
+We model this sequence as a first-order Markov chain with transitions between two states.
+
+## 1.1 Transition Probabilities
+
+We define transition counts as:
+
+- $n_{00}$: number of transitions from 0 to 0  
+- $n_{01}$: number of transitions from 0 to 1  
+- $n_{10}$: number of transitions from 1 to 0  
+- $n_{11}$: number of transitions from 1 to 1  
+
+Then we estimate the transition probabilities:
+
+$$
+\hat{a} = \frac{n_{01}}{n_{00} + n_{01}}, \quad
+\hat{b} = \frac{n_{10}}{n_{10} + n_{11}}
+$$
+
+where:
+
+- $\hat{a}$ is the probability of switching from 0 to 1  
+- $\hat{b}$ is the probability of switching from 1 to 0  
+
+The total switching probability, $\hat{a} + \hat{b}$, quantifies how often the indicator moves between its two states ($0 \leftrightarrow 1$). This directly relates to the **mixing rate** of the Markov chain: the higher the switching rate, the better the mixing. Conversely, a chain that switches rarely (i.e., $\hat{a} + \hat{b}$ is close to 0) will exhibit strong autocorrelation.
+
+We approximate the **integrated autocorrelation time** $\tau$ using the formula:
+
+$$
+\tau = \frac{2 - (\hat{a} + \hat{b})}{\hat{a} + \hat{b}}
+$$
+
+This formula arises from the spectral properties of a two-state Markov chain and gives an interpretable estimate of how many MCMC draws are needed to get one effectively independent sample.
+
+Finally, the **effective sample size (ESS)** for the indicator chain is estimated as:
+
+$$
+\text{ESS} = \frac{T}{\tau}
+$$
+
+And the standard deviation and MCSE of the inclusion probability $\hat{p} = \frac{1}{T} \sum_t \gamma_t$ are:
+
+$$
+\text{sd}(\gamma) = \sqrt{\hat{p}(1 - \hat{p})}, \quad
+\text{MCSE}(\hat{p}) = \frac{\text{sd}(\gamma)}{\sqrt{\text{ESS}}}
+$$
+
+------------------------------------------------------------------------
+
+# 2. Spike-and-Slab Posterior Summaries
+
+Let $\theta$ be a parameter governed by a **spike-and-slab prior**, meaning that $\theta$ is generated from a mixture of:
+
+- a **point mass at zero** (the spike), and
+- a **continuous density** (the slab).
+
+Formally, we introduce a binary latent inclusion variable $\gamma \in \{0, 1\}$ and define the model as:
+
+$$
+\begin{aligned}
+\gamma &\sim \operatorname{Bernoulli}(p) \\
+\theta \mid \gamma &= 
+\begin{cases}
+\theta_1, & \text{if } \gamma = 1 \\
+0, & \text{if } \gamma = 0
+\end{cases}
+\end{aligned}
+$$
+
+where $\theta_1 \sim p(\theta_1)$ is a continuous prior (e.g., Normal) defined on the slab.
+
+Thus, the **marginal prior** for $\theta$ is a mixture:
+
+$$
+p(\theta) = (1 - p) \cdot \delta_0(\theta) + p \cdot p(\theta_1)
+$$
+
+where $\delta_0(\theta)$ is the Dirac delta function centered at 0 (the spike).
+
+This formulation induces a sparsity-inducing prior, where $\theta$ is exactly zero with probability $1 - p$ and otherwise drawn from a continuous distribution with probability $p$.
+
+## Posterior Expectation and Variance
+
+We define:
+
+- $\hat{p} = \mathbb{E}[\gamma \mid \text{data}]$: the posterior inclusion probability  
+- $\hat{\mu} = \mathbb{E}[\theta \mid \gamma = 1, \text{data}]$: the mean of $\theta$ **conditioned on inclusion**  
+- $\hat{\sigma}^2 = \operatorname{Var}(\theta \mid \gamma = 1, \text{data})$: the corresponding conditional variance
+
+Then, using the law of total expectation, the **posterior mean** of $\theta$ is:
+
+$$
+\mathbb{E}[\theta \mid \text{data}] = \hat{p} \cdot \hat{\mu}
+$$
+
+This quantity integrates over the uncertainty in both:
+
+- whether the parameter is included at all (via $\hat{p}$), and  
+- its value when it is included (via $\hat{\mu}$).
+
+It serves as a continuous estimator of effect strength, properly attenuated by posterior sparsity.
+
+
+## Posterior Variance
+
+Given that the marginal posterior for $\theta$ is a mixture of a point mass at zero and a continuous slab distribution, its total variance reflects two distinct sources of uncertainty:
+
+1. **The variance within the slab** (when $\gamma = 1$), and  
+2. **The uncertainty about inclusion itself**, i.e., whether $\theta$ is 0 or not.
+
+Formally, we use the **law of total variance**:
+
+$$
+\operatorname{Var}(\theta) = \mathbb{E}_\gamma \left[\operatorname{Var}(\theta \mid \gamma)\right] + \operatorname{Var}_\gamma \left[\mathbb{E}(\theta \mid \gamma)\right]
+$$
+
+Substituting in our definitions:
+
+- $\mathbb{E}[\theta \mid \gamma = 1] = \hat{\mu}$  
+- $\operatorname{Var}[\theta \mid \gamma = 1] = \hat{\sigma}^2$  
+- $\mathbb{E}[\theta \mid \gamma = 0] = 0$  
+- $\operatorname{Var}[\theta \mid \gamma = 0] = 0$  
+- $\mathbb{P}(\gamma = 1) = \hat{p}$
+
+we obtain:
+
+$$
+\operatorname{Var}(\theta) = \hat{p} \cdot \hat{\sigma}^2 + \hat{p}(1 - \hat{p}) \cdot \hat{\mu}^2
+$$
+
+This decomposition allows us to propagate uncertainty appropriately when computing Monte Carlo errors or posterior predictive summaries.
+ 
+
+## Monte Carlo Standard Error (MCSE)
+
+The posterior mean of $\theta$ under the spike-and-slab model is:
+
+$$
+\hat{\theta} = \hat{p} \cdot \hat{\mu}
+$$
+
+where:
+
+- $\hat{p}$ is the posterior inclusion probability,
+- $\hat{\mu}$ is the mean of $\theta$ conditioned on inclusion ($\gamma = 1$).
+
+Both $\hat{p}$ and $\hat{\mu}$ are **estimated from MCMC draws**, and each comes with its own Monte Carlo uncertainty. To propagate this uncertainty into $\hat{\theta}$, we apply the **delta method**, a general approach for approximating the variance of a function of random variables.
+
+### Delta Method Approximation
+
+In general, the variance of a product of two random variables $X$ and $Y$ is:
+
+$$
+\operatorname{Var}(XY) =
+\mathbb{E}[X]^2 \cdot \operatorname{Var}(Y) +
+\mathbb{E}[Y]^2 \cdot \operatorname{Var}(X) +
+\operatorname{Var}(X)\operatorname{Var}(Y) +
+2 \cdot \operatorname{Cov}(X, Y)^2
+$$
+
+However, the **delta method approximation** assumes that $X$ and $Y$ are **uncorrelated** (or weakly correlated), so the final two terms are dropped. Under this approximation:
+
+$$
+\operatorname{Var}(XY) \approx
+\mathbb{E}[X]^2 \cdot \operatorname{Var}(Y) +
+\mathbb{E}[Y]^2 \cdot \operatorname{Var}(X)
+$$
+
+Applying this to $\hat{\theta} = \hat{p} \cdot \hat{\mu}$ gives:
+
+$$
+\operatorname{Var}(\hat{\theta}) \approx
+\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu})
+$$
+
+Taking the square root yields the **Monte Carlo Standard Error (MCSE)**:
+
+$$
+\text{MCSE}(\hat{\theta}) = \sqrt{
+\hat{\mu}^2 \cdot \text{MCSE}^2(\hat{p}) +
+\hat{p}^2 \cdot \text{MCSE}^2(\hat{\mu})
+}
+$$
+
+This expression shows how MCSE accumulates from two distinct sources:
+
+- $\text{MCSE}(\hat{p})$: uncertainty due to sampling the indicator chain (e.g., via a two-state Markov model),
+- $\text{MCSE}(\hat{\mu})$: uncertainty in estimating the conditional mean from the non-zero (slab) values.
+
+### Effective Sample Size
+
+The **effective sample size (ESS)** tells us how many independent draws we would need to estimate a quantity with the same precision as our current MCMC sample.
+
+This is based on the relationship between the **Monte Carlo standard error (MCSE)** and the posterior variance. For any estimator:
+
+$$
+\text{MCSE}^2 = \frac{\text{Posterior Variance}}{\text{ESS}}
+$$
+
+Rearranging gives:
+
+$$
+\text{ESS} = \frac{\text{Posterior Variance}}{\text{MCSE}^2}
+$$
+
+This formula is widely used in MCMC diagnostics: it treats ESS as a way to convert between sampling variance and estimation precision.
+
+In the spike-and-slab case, we apply this to the marginal posterior mean:
+
+$$
+\hat{\theta} = \hat{p} \cdot \hat{\mu}
+$$
+
+We compute:
+
+- $\operatorname{Var}(\theta)$ using the law of total variance
+- $\operatorname{Var}(\hat{\theta})$ using the delta method (from MCSE propagation)
+
+Putting these into the formula above gives:
+
+$$
+\text{ESS}_{\text{combined}} = \frac{\operatorname{Var}(\theta)}{\operatorname{Var}(\hat{\theta})}
+$$
+
+This gives a meaningful, interpretable estimate of how many effectively independent samples were used to estimate $\hat{\theta}$ — accounting for both model-based uncertainty and sampling error.
+
+
+------------------------------------------------------------------------
+
+# 3. Shared Indicator for Vector of Parameters
+
+If $\gamma$ is shared by a vector $\boldsymbol{\theta} = (\theta_1, \dots, \theta_d)$, then:
+
+- All parameters are jointly zero when $\gamma = 0$  
+- The same $\hat{p}$ and $\text{MCSE}(\hat{p})$ are reused for all  
+
+For each component:
+
+$$
+\mathbb{E}[\theta_k] = \hat{p} \cdot \hat{\mu}_k
+$$
+
+and the MCSE is:
+
+$$
+\text{MCSE}(\hat{\theta}_k) = \sqrt{
+\hat{\mu}_k^2 \cdot \text{MCSE}^2(\hat{p}) +
+\hat{p}^2 \cdot \text{MCSE}^2(\hat{\mu}_k)
+}
+$$
+
+------------------------------------------------------------------------
+
+# 4. Edge Cases
+
+- If all $\gamma_t = 1$: fall back to `summarize_manual()`  
+- If all $\gamma_t = 0$: set summaries to 0 or NA  
+- If transitions are absent (e.g. $n_{01} = 0$), skip Markov ESS  
+
+------------------------------------------------------------------------
+
+# Gelman-Rubin Diagnostic ($\hat{R}$)
+
+The Gelman-Rubin diagnostic $\hat{R}$ measures the ratio of **between-chain variance** to **within-chain variance**. A value close to 1 indicates convergence across chains. In the context of spike-and-slab models, we distinguish between three cases:
+
+### $\hat{R}$ for Indicator Variables ($\gamma$)
+
+Each indicator chain is a binary sequence $\gamma_t \in \{0, 1\}$. We estimate the posterior inclusion probability in each chain:
+
+$$
+\bar{\gamma}_c = \frac{1}{T} \sum_{t=1}^{T} \gamma_{t}^{(c)}
+$$
+
+We compute:
+
+- The **within-chain variance**:
+  $$
+  W = \frac{1}{C} \sum_{c=1}^{C} \operatorname{Var}(\gamma^{(c)})
+  $$
+
+- The **between-chain variance**:
+  $$
+  B = \frac{T}{C - 1} \sum_{c=1}^{C} (\bar{\gamma}_c - \bar{\gamma})^2, \quad \bar{\gamma} = \frac{1}{C} \sum_{c=1}^{C} \bar{\gamma}_c
+  $$
+
+Then the **Gelman-Rubin statistic** is:
+
+$$
+\hat{R} = \sqrt{ \frac{ \frac{T - 1}{T} W + \frac{1}{T} B }{W} }
+$$
+
+We only compute $\hat{R}$ when there are transitions (i.e., both 0 and 1 values). Otherwise, we return `NA`.
+
+---
+
+### 3.2 $\hat{R}$ for Slab Values ($\theta \mid \gamma = 1$)
+
+Slab values are conditionally continuous and only present when $\gamma = 1$. For each chain $c$, we define:
+
+- $\mu_c = \mathbb{E}[\theta \mid \gamma = 1, \text{chain } c]$
+- $s_c^2 = \operatorname{Var}(\theta \mid \gamma = 1, \text{chain } c)$
+
+We only include chains with sufficient non-zero draws (e.g., $n > 2$). Then we compute:
+
+- $W = \frac{1}{C} \sum_{c=1}^C s_c^2$
+- $B = \frac{T}{C - 1} \sum_{c=1}^C (\mu_c - \mu)^2$
+
+with $\mu = \frac{1}{C} \sum_c \mu_c$, and compute $\hat{R}$ as above.
+
+If too few chains have usable slab draws, we return `NA`.
+
+---
+
+### 3.3 $\hat{R}$ for Spike-and-Slab Parameter ($\theta = \gamma \cdot \theta_1$)
+
+For the full spike-and-slab variable, we compute the **marginal posterior mean** in each chain:
+
+$$
+\hat{\theta}_c = \bar{\gamma}_c \cdot \bar{\theta}_{c \mid \gamma = 1}
+$$
+
+and estimate variance via:
+
+$$
+s_c^2 = \bar{\gamma}_c \cdot \operatorname{Var}(\theta_{c \mid \gamma = 1}) + \bar{\theta}_{c \mid \gamma = 1}^2 \cdot \bar{\gamma}_c (1 - \bar{\gamma}_c)
+$$
+
+Then we compute:
+
+- $W = \frac{1}{C} \sum_c s_c^2$
+- $B = \frac{T}{C - 1} \sum_c (\hat{\theta}_c - \hat{\theta})^2$, with $\hat{\theta} = \frac{1}{C} \sum_c \hat{\theta}_c$
+
+and again use:
+
+$$
+\hat{R} = \sqrt{ \frac{ \frac{T - 1}{T} W + \frac{1}{T} B }{W} }
+$$
+
+This generalizes the usual $\hat{R}$ diagnostic to selection models with mixture structure.
+
+---
+
+### Notes on Robustness
+
+- If all chains have constant $\gamma$ values (always 0 or always 1), we return `NA`.
+- If too few non-zero draws are available for variance estimation, we skip $\hat{R}$.
+- In non-selection models, we default to `summarize_manual()` with standard $\hat{R}$ computation.
+
+---
