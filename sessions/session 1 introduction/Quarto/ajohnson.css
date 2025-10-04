@@ -1,0 +1,135 @@
+
+/* === Typography and Headings === */
+@import url('https://fonts.googleapis.com/css?family=Muli:400,400i,700&display=swap');
+
+body {
+  font-family: 'Muli', sans-serif;
+  color: #333;
+  line-height: 1.6;
+  background-color: #ffffff;
+  margin: 2em;
+}
+
+h1, h2, h3 {
+  color: #01426A;
+  font-weight: 700;
+}
+
+h1, h2 {
+  border-bottom: 3px solid #01426A;
+  border-top: 3px solid #01426A;
+  border-radius: 3px;
+  padding: 0.4em 0.2em;
+  margin-top: 1em;
+}
+
+a {
+  color: #D44420;
+  text-decoration: underline;
+}
+
+a:hover {
+  color: #6A2210;
+}
+
+/* === Callout Boxes === */
+.note, .quiz, .goals, .warning, .describe {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.25em 0.75em 0.25em 0.75em; /* reduced bottom padding */
+  margin: 1.5em 0 1em 0;              /* reduced bottom margin */
+  background-color: #ececec;
+  border-top: 1px solid #01426A;
+  border-bottom: 1px solid #01426A;
+  border-radius: 10px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.note::before {
+  content: "\f044\00a0 Note";
+  font-family: 'FontAwesome';
+  font-weight: bold;
+  font-size: 18px;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+.quiz::before {
+  content: "\f059\00a0 Quiz Yourself!";
+  font-family: 'FontAwesome';
+  font-weight: bold;
+  font-size: 18px;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+.goals::before {
+  content: "\f140\00a0  Goals";
+  font-family: 'FontAwesome';
+  font-weight: bold;
+  font-size: 18px;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+.warning::before {
+  content: "\f071\00a0 Warning";
+  font-family: 'FontAwesome';
+  font-weight: bold;
+  font-size: 18px;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+/* === Code Blocks and Inline Code === */
+code {
+  background-color: #eaeff0;
+  font-family: monospace;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+pre {
+  background-color: #ffffff;
+  border: 1px solid black;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: monospace;
+}
+
+/* === Tables === */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+table, th, td {
+  border: 1px solid #ddd;
+  padding: 0.5em;
+}
+
+tr:nth-child(even) {
+  background-color: #f5f5f5;
+}
+
+th {
+  background-color: #01426A;
+  color: white;
+}
+
+/* === Misc === */
+ul {
+  list-style-type: square;
+}
+
+.screenshot-block {
+  text-align: center;
+  margin-bottom: 2em;
+}
+
+.screenshot-block img {
+  width: 400px;
+  margin-bottom: 1em;
+}
