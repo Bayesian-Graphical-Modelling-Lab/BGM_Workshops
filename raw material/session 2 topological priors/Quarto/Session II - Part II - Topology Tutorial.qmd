@@ -1,5 +1,5 @@
 ---
-title: "Part V: The Bayesian analysis of psychometric topology"
+title: "Part II: Topological priors"
 author: "Maarten Marsman"
 date: "2025-09-25"
 format:
@@ -23,39 +23,45 @@ engine: knitr
 ::: {.callout-tip title="Workshop Roadmap"}
 **You are here:**  
 
-📜 Part I — History: Why Bayesian network analysis became necessary ✅  
-📘 Part II — Theory: How to quantify evidence for edge inclusion or exclusion ✅  
-🔧 Part III — Practice: Basics of the Bayesian workflow ✅  
-🎯 Part IV — Theory: Priors as models of psychometric topology ✅  
-🧩 **Part V — Practice: Evaluating the influence of network priors**  
+🧭 Intro — From network psychometrics to Bayesian graphical modeling ✅  
+📊 **Session I — Quantifying evidence for network edges** ✅  
+🔍 **Session II — Modeling topological structure with priors** 🟩  
+🧠 Session III — Comparing groups and testing network invariance  
+⚙️ Session IV — MCMC diagnostics and efficiency  
 :::
+
 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Recap 
+# Recap
 
-## Parts I–III
+Before we start the practical work, let’s recall how we got here.
 
-- In Part I, we explored why network models became a tool in psychology.  
-- In Part II, we saw how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence*.  
-- In Part III, we practiced the Bayesian workflow: testing edges, estimating parameters, visualizing uncertainty, and running sensitivity checks.  
+## From Session I — Quantifying edge evidence
 
-## Part IV — Prior models of network topology
+- We learned how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence*.  
+- Using Bayes factors, we quantified the strength of evidence for individual edges.  
+- We practiced estimating networks, interpreting uncertainty, and running prior-sensitivity checks.
 
-In Part IV, we explored how a prior can encode ideas about network structures.  
+## From Session II (Theory) — Modeling network topology
+
+- A large-scale Bayesian reanalysis showed that most published networks provide **weak or inconclusive** evidence for many edges.  
+- This revealed that network estimation alone cannot resolve structural uncertainty.  
+- We therefore explored **topological priors**, which, as we shall see in this session, let's us express expectations about the structure itself:
+  - **Bernoulli prior** → overall expected density  
+  - **Beta–Bernoulli prior** → balanced network complexity and automatic multiplicity correction  
+  - **Stochastic Block Model (SBM)** → clustered or modular networks often found in psychology  
 
 ::: {.callout-note title="Recap Questions"}
+> If we don’t want to fix π by hand, which prior should we use?  
 
-> If we don’t want to pick π by hand; which prior should we use?
-
-> When comparing Bernoulli vs Beta–Bernoulli, what role does **network complexity** (number of edges) play?  
-
-> The Stochastic Block Model (SBM) adds something new: what kinds of structures can it represent that the other priors cannot?  
-
+> What can the SBM capture that the other priors cannot?  
 :::
+
+
 
 
 ## Goals for this session
@@ -63,24 +69,13 @@ In Part IV, we explored how a prior can encode ideas about network structures.
 At the end of this session, you should be able to:
 
 ::: {.goals}
-- **Identify** the structural assumptions built into different edge priors:  
-  – Bernoulli: independent edges with fixed probability π.  
-  – Beta–Bernoulli: random π with an induced distribution on network complexity.  
-  – Stochastic Block Model: explicit modeling of domains and clusters.
 
-- **Explain** how the Beta–Bernoulli prior improves on the Bernoulli prior by:  
-  – treating π as random rather than fixed,  
-  – balancing the prior weight across different network complexities,  
-  – preventing medium-density networks from dominating simply because they are most numerous, and  
-  – avoiding arbitrary specification of π.
-
-- **Estimate** psychological networks under different priors (Bernoulli, Beta–Bernoulli, SBM) and compare how prior assumptions affect posterior edge inclusion, network density, and clustering.
-
-- **Interpret** posterior results in light of prior assumptions, with particular attention to:  
-  – how the Beta–Bernoulli prior redistributes weight over sparse, medium, and dense networks,  
-  – how the SBM prior can reveal clusters, and  
-  – when a prior favors sparse versus dense structures.
+- **Describe** how different topological priors (Bernoulli, Beta–Bernoulli, SBM) encode assumptions about network structure.
+- **Explain** how the Beta–Bernoulli prior balances network complexity and avoids arbitrary π-choices.
+- **Estimate** networks under each prior and compare how prior assumptions affect posterior edge inclusion, network density, and clustering.
+- **Interpret** posterior results in light of prior assumptions—when priors favor sparse, complex, or clustered networks.
 :::
+
 
 ::: {.note}
 **Recommended Reading:**
@@ -125,27 +120,29 @@ These simulations prepare us to identify their structural assumptions and to exp
 
 ### Simulating the Bernoulli Prior
 
-Under Bernoulli(π), each edge is included independently with fixed probability π.  
-This exercise helps us **identify the structural assumptions** of this prior.
+Under a Bernoulli(π) prior, each edge is included independently with fixed probability π.  
+Let’s see what that assumption looks like in practice.
 
 **Tasks**
 
-1. **Simulate networks:** Generate several random networks from Bernoulli(π = 0.5) with *p = 10* nodes.  
-   *Goal: observe what “independent edges with fixed probability” looks like in practice.*
+1. **Simulate networks**  
+   Generate several random networks from a Bernoulli(π = 0.5) model with *p = 10* nodes.  
+   Notice how edge inclusion varies across repetitions.
 
-2. **Check expectations:**  
+2. **Check expectations**  
    - Compute the number of possible edges $m = \tfrac{p(p-1)}{2}$.  
-   - Compute the expected number of edges $E[\#\text{edges}] = m \times \pi$.  
-   - Compute the expected density $E[\text{density}] = \pi$.  
-   *Goal: connect simulation results to theoretical expectations.*
+   - Calculate the expected number of edges $E[\#\text{edges}] = m \times \pi$.  
+   - Verify that the expected density equals $\pi$.  
 
-3. **Interpret results:** Compare simulated networks to these expectations.  
-   *Goal: see whether the prior behaves as the mathematics predicts.*
+3. **Compare**  
+   Inspect how closely your simulated networks match these expectations.  
+   Do the observed edge counts cluster around the theoretical mean?
 
-4. **Reflect:**  
-   - Do the simulated edges appear independent?  
-   - Does the expected density change when the number of nodes $p$ increases?  
-   *Goal: extract the key assumptions of the Bernoulli prior to contrast later with Beta–Bernoulli.*
+4. **Reflect**  
+   - Do edges appear independent of one another?  
+   - Does the expected density change when you vary the number of nodes $p$?  
+
+These steps will give us a concrete sense of what *“independent edges with fixed probability”* means before moving on to more flexible priors.
 
 
 ### Try it
@@ -261,31 +258,31 @@ Move the sliders (tickers?) for α and β and observe:
 
 ### Simulating the Beta–Bernoulli Prior
 
-Under a **Beta–Bernoulli(α,β)** prior:  
-- π is not fixed but drawn from a Beta distribution.  
-- Each edge is then included independently with probability π.  
+Under a **Beta–Bernoulli(α, β)** prior:
+- The inclusion probability π is *random*, drawn from a Beta distribution.  
+- Each edge is then included independently with probability π.
 
-This exercise helps us **explain how the Beta–Bernoulli prior generalizes the Bernoulli prior** by allowing networks of varying densities.
+Let’s explore how this setup produces networks of varying densities.
 
 **Tasks**
 
-1. **Simulate networks:** Generate several random networks with *p = 10* under Beta–Bernoulli(1,1).  
-   *Goal: see how making π random produces both sparse and dense networks, not just ones near 50% density.*
+1. **Simulate networks**  
+   Generate several random networks with *p = 10* under Beta–Bernoulli(1,1).  
+   Notice how making π random yields both sparse and dense networks, rather than clustering near 50% density as in the Bernoulli case.
 
-2. **Check expectations:**  
+2. **Check expectations**  
    - Compute the number of possible edges $m = \tfrac{p(p-1)}{2}$.  
-   - Compute expected edge count: $E[\#\text{edges}] = E[π] \times m$.  
-   - Compute expected density: $E[\text{density}] = E[π]$.  
-   *Goal: connect simulations to the role of the Beta distribution for π.*
+   - Calculate the expected edge count $E[\#\text{edges}] = E[π] \times m$.  
+   - Verify that the expected density equals $E[π]$.  
+   Compare these expectations to your simulated results.
 
-3. **Interpret results:** Compare simulated networks to these expectations.  
-   *Goal: evaluate how much variety in density arises compared to Bernoulli(0.5).*
-
-4. **Explore α, β:** Try different settings such as (2,5), (5,2), (10,10).  
+3. **Vary α and β**  
+   Experiment with different settings, such as (2, 5), (5, 2), and (10, 10).  
    - How does the distribution of π change?  
-   - How do simulated densities change?  
-   - Which choices favor sparser vs. denser networks?  
-   *Goal: understand how α and β encode beliefs about sparsity or density.*
+   - How do the resulting network densities differ?  
+   - Which combinations favor sparser or denser networks?
+
+Through this, you’ll get an intuitive sense of how the Beta–Bernoulli prior generalizes the Bernoulli prior by allowing network densities to vary and by encoding beliefs about sparsity or density.
 
 
 ### Try it
@@ -380,19 +377,19 @@ for (k in 1:4) {
 
 :::
 
-```{r, cache = TRUE}
+```r
 library(bgms)
 fit = bgm(Wenchuan, 
           update_method = "adaptive-metropolis", 
           iter = 1e4, 
-          edge_prior="Beta-Bernoulli",
-          display_progress = "none")
+          edge_prior="Beta-Bernoulli")
 
 adj = 1 * (fit$posterior_mean_indicator > .5)
+colnames(adj) = rownames(adj) = 1:ncol(Wenchuan)
 plot(igraph::graph_from_adjacency_matrix(adj, mode = "undirected"))
 ```
 
-
+![](figures/bgms_run_adj.png){fig-align="center" width=50%}
 
 
 ## 1.2. Priors over structures and network complexity
@@ -546,7 +543,7 @@ This exercise asks you to analyze the Wenchuan earthquake PTSD dataset and justi
 
 ::: {.panel-tabset}
 
-### Assignment
+### Tasks
 
 1. Analyze the **Wenchuan earthquake PTSD dataset** using `bgms`.  
 2. Before fitting the model, reflect:  
@@ -611,7 +608,7 @@ p1 / p2
 
 ---
 
-### Reflection
+**Reflection**  
 
 - Did the posterior density under each prior match your expectations?  
 - Which prior seemed more defensible, given what you saw in the Shiny app and the literature?  
@@ -793,46 +790,54 @@ To build intuition, we simulate small networks with a fixed number of blocks.
 ::: {.panel-tabset}
 
 
-#### Assignment
+### Tasks
 
-Your task is to build intuition for what the Stochastic Block Model (SBM) prior implies.  
+The **Stochastic Block Model (SBM)** prior assumes that nodes are organized into clusters or domains.  
+Edges are more likely within the same block and less likely between blocks.  
+Let’s build some intuition for what this structure implies.
 
-1. **Simulate networks:** Generate networks with three blocks of equal size.  
-   - First, try *small blocks* (e.g., `block_sizes = c(4,4,4)`).  
-   - Then, try *larger blocks* (e.g., `block_sizes = c(10,10,10)`).  
-   *Goal: compare how cluster size affects how clearly clusters are visible.*  
+**Tasks**
 
-2. **Set probabilities:** Use a high probability of edges *within* blocks (e.g., 0.6) and a low probability *between* blocks (e.g., 0.1).  
-   *Goal: see how different within- vs. between-block probabilities create clustered structure.*  
+1. **Simulate networks**  
+   Generate networks with three blocks of equal size.  
+   - Start with smaller blocks, e.g., `block_sizes = c(4, 4, 4)`.  
+   - Then try larger ones, e.g., `block_sizes = c(10, 10, 10)`.  
+   Compare how cluster size affects how clearly the blocks stand out.
 
-3. **Visualize:** Plot several simulated networks.  
-   *Goal: recognize visual evidence of clusters compared to earlier priors.*  
+2. **Set connection probabilities**  
+   Use a high probability of edges *within* blocks (e.g., 0.6) and a low probability *between* blocks (e.g., 0.1).  
+   Observe how different within- vs. between-block probabilities change the overall network pattern.
 
-4. **Compare:** Relate your results to the Bernoulli/Beta–Bernoulli networks you generated earlier.  
-   *Goal: contrast clustering (SBM) with density-only priors (Bernoulli/Beta–Bernoulli).*  
+3. **Visualize**  
+   Plot several simulated networks to see how clustering becomes visible.  
+   Look for clear domains or bridge nodes connecting clusters.
 
+4. **Compare**  
+   Relate these results to the Bernoulli and Beta–Bernoulli networks you simulated earlier.  
+   Notice how the SBM introduces structure beyond density alone, capturing domain-like or modular organization.
+ 
 
-#### Try it
+### Try it
 
-Run the code below to simulate networks from an SBM prior.  
+Run the code below to simulate networks from an SBM prior.
 
-1. **Set block sizes:**  
-   - Start with `block_sizes = c(4,4,4)`.  
-   - Then increase to `block_sizes = c(10,10,10)`.  
-   *Goal: compare how cluster size influences how clearly clusters can be detected.*  
+1. **Set block sizes**  
+   - Start with `block_sizes = c(4, 4, 4)`.  
+   - Then increase to `block_sizes = c(10, 10, 10)`.  
+   Compare how cluster size affects how clearly the clusters appear.
 
-2. **Set edge probabilities:**  
-   - Use `p_within = 0.6` and `p_between = 0.1` as default values.  
-   - Experiment with other values if you like.  
-   *Goal: see how differences between within- and between-block probabilities create more or less visible clustering.*  
+2. **Set edge probabilities**  
+   - Use `p_within = 0.6` and `p_between = 0.1` as a starting point.  
+   - Experiment with other values to see how stronger or weaker contrasts between within- and between-block connections change the structure.
 
-3. **Simulate multiple networks:**  
+3. **Simulate multiple networks**  
    - Use the loop to generate and plot several draws.  
-   *Goal: observe variability across draws while the same structural assumptions hold.*  
+   Observe how much variability there is across simulations when the same structural assumptions hold.
 
-4. **Compare with earlier priors:**  
-   - Recall what Bernoulli and Beta–Bernoulli networks looked like.  
-   *Goal: identify that SBM encodes clustering structure, while Bernoulli/Beta–Bernoulli only encode density.*  
+4. **Compare with earlier priors**  
+   - Recall what the Bernoulli and Beta–Bernoulli networks looked like.  
+   Notice how the SBM creates *clustered* structure, while the earlier priors affected only overall density.
+
 
 ```r
 library(igraph)
@@ -866,23 +871,24 @@ for (k in 1:4) {
 }
 ```
 
-#### Reflection
+### Reflection
 
-- **Clusters vs. randomness:**  
-  Did the SBM simulations show clusters more clearly than Bernoulli/Beta–Bernoulli?  
-  *Goal: confirm that SBM encodes structural organization, not just density.*  
+- **Clusters vs. randomness**  
+  Did the SBM simulations show clearer clusters than the Bernoulli or Beta–Bernoulli networks?  
+  What does this tell you about how the SBM captures structural organization beyond simple density?
 
-- **Effect of block size:**  
-  How did small blocks (4 nodes) compare to larger blocks (10 nodes) in terms of visible clustering?  
-  *Goal: understand that detecting clusters requires larger *p* (nodes), not larger *n* (observations).*  
+- **Effect of block size**  
+  How did smaller blocks (4 nodes) compare to larger ones (10 nodes) in terms of visible clustering?  
+  What does this suggest about the number of nodes needed to detect clusters?
 
-- **Within- vs. between-block probabilities:**  
-  How did changing `p_within` and `p_between` affect the clarity of clusters?  
-  *Goal: link these parameters to psychological expectations — for example, strong within-block connectivity corresponds to tightly connected symptom domains, while higher between-block connectivity reflects weaker separation between domains.*
+- **Within- vs. between-block probabilities**  
+  How did changing `p_within` and `p_between` influence how distinct the clusters appeared?  
+  Think about how stronger within-block connections correspond to tightly linked symptom domains, while higher between-block connectivity reflects more overlap between domains.
 
-- **Connection to psychology:**  
-  If these were symptom networks, how would you interpret within-cluster edges vs. between-cluster edges?  
-  *Goal: link prior assumptions to substantive expectations about symptom domains and cross-domain connections.*   
+- **Connection to psychology**  
+  If these were symptom networks, how would you interpret edges within and between clusters?  
+  How might these patterns relate to theoretical expectations about domains or bridging symptoms?
+
 
 :::
 
@@ -990,7 +996,7 @@ The object `fit_sbm$posterior_num_blocks` contains posterior probabilities for e
 fit_sbm$posterior_num_blocks
 ```
 
-*Goal:* see which numbers of clusters (e.g., 1, 2, 3) are most supported by the data.  
+> Which numbers of clusters (e.g., 1, 2, 3) are most supported by the data?  
 
 ### Step 3: Compute posterior odds
 From `posterior_num_blocks`, compute the posterior odds of one clustering hypothesis vs. another:  
@@ -1131,7 +1137,7 @@ BF_3v2
 
 ## 2.4 Empirical Example: Boredom, Curiosity, and Exploration
 
-We now turn to an empirical example from [Martarelli, Ballifard, and Audrin (2023)](https://github.com/Bayesian-Graphical-Modelling-Lab/BGM_Workshops/blob/5thFSoIM/sessions/session%202%20topological%20priors/Martarelli%20Ballifard%20Audrin%202023.pdf).  
+We now turn to an empirical example from [Martarelli, Ballifard, and Audrin (2023)](https://github.com/Bayesian-Graphical-Modelling-Lab/BGM_Workshops/blob/5thFSoIM/workshop%20material/Session%20II/Martarelli%20Ballifard%20Audrin%202023.pdf).  
 The authors aimed to:  
 
 1. Validate the French translation of the **Short Boredom Proneness Scale (SBPS)**.  
@@ -1152,36 +1158,36 @@ data_boredom = read.csv2("https://raw.githubusercontent.com/Bayesian-Graphical-M
 
 ::: {.panel-tabset}
 
-### Assignment
+### Tasks
 
-Your task is to test the clustering hypotheses from Martarelli, Ballifard, and Audrin (2023) using the Bayesian SBM.
+Now test the clustering hypotheses from Martarelli, Ballifard, and Audrin (2023) using the Bayesian SBM.
 
-1. **Specify prior expectations:**  
-   - Choose $\lambda$ to reflect the expected number of clusters (the authors expected 3).  
-   - Use default values for $\alpha,\beta = 1$ (neutral beliefs about density).  
-   - Leave the Dirichlet parameter at 1 (neutral cluster size balance).  
-   *Goal: translate a substantive hypothesis into prior parameters.*  
+1. **Specify prior expectations**  
+   - Choose λ to reflect the expected number of clusters (the authors anticipated 3).  
+   - Keep the Beta–Bernoulli parameters at their defaults, α = β = 1, representing neutral beliefs about overall density.  
+   - Leave the Dirichlet parameter at 1 for balanced cluster sizes.  
+   This step translates the substantive hypothesis—three underlying domains—into prior parameters.
 
-2. **Fit the SBM model:**  
+2. **Fit the SBM model**  
    Estimate the model on the cleaned dataset using `bgm()`.  
-   *Goal: apply the SBM to empirical data.*  
+   This will apply the SBM prior to empirical data and allow the number of clusters to vary according to the posterior.
 
-3. **Compute posterior probabilities:**  
-   Extract `posterior_num_blocks` to get the posterior distribution over cluster numbers.  
-   *Goal: see whether the data support 1, 2, or 3 clusters.*  
+3. **Compute posterior probabilities**  
+   Extract `posterior_num_blocks` to obtain the posterior distribution over the number of clusters.  
+   Examine whether the data favor one, two, or three clusters.
 
-4. **Compute clustering Bayes factors:**  
-   Start by testing whether the data support clustering at all:  
+4. **Compute clustering Bayes factors**  
+   Begin by testing whether the data support any clustering at all:  
 
    - $H_0$: one cluster (no clustering)  
    - $H_1$: two or more clusters (evidence for clustering)  
 
-   Then, compare specific hypotheses of interest:  
+   Then compare specific hypotheses of interest:  
 
    - $H_1$: two clusters  
    - $H_2$: three clusters (the authors’ expectation)  
 
-   *Goal: first establish whether clustering is present, then evaluate whether the expected three-domain structure is supported over two domains.*
+   Evaluate whether the posterior evidence supports the expected three-domain structure or favors fewer domains.
 
 ---
 
@@ -1225,7 +1231,6 @@ fit_sbm_boredom$posterior_num_blocks
 
 ---
 
-### Solution
 ### Solution
 
 ```r
@@ -1381,20 +1386,25 @@ This makes it a proof-of-concept tool for now, but it illustrates how priors can
 
 ## Recap and Outlook
 
-**In Part V, we have:**  
-- Simulated networks under different priors (Bernoulli, Beta–Bernoulli, SBM).  
-- Identified the structural assumptions each prior encodes.  
-- Learned how to compute Bayes factors for edge inclusion and for clustering.  
-- Applied the SBM workflow to real data on boredom, curiosity, and exploration.  
-- Reflected on how priors translate substantive theory into statistical models.  
+**In this session (Session II – Practical), we have:**  
+- Simulated networks under three topological priors — Bernoulli, Beta–Bernoulli, and SBM.  
+- Explored how each prior encodes different structural assumptions about density, complexity, and clustering.  
+- Computed Bayes factors for both edge inclusion and network clustering.  
+- Applied the SBM workflow to empirical data on boredom, curiosity, and exploration.  
+- Reflected on how prior choices translate substantive psychological theory into statistical form.
 
-**Optional extensions (if time allows):**  
+**How this connects to the rest of the workshop:**  
+- In **Session I**, we learned to quantify evidence for individual edges.  
+- Here in **Session II**, we extended that reasoning to the structure of the entire network — modeling uncertainty and theoretical expectations directly in the prior.  
+- In **Session III**, we will build on this foundation to compare networks across groups, testing hypotheses about invariance and difference at both the edge and network levels.  
+
+**Optional extensions (if time allows):**   
 - Visualizing node-level clustering and co-clustering matrices.  
-- Considering whether unstable assignments might suggest bridge symptoms.  
+- Examining whether unstable cluster assignments indicate possible bridge symptoms or overlapping domains.  
 
 **Looking ahead:**  
-- New work by **Sekulovski, Waaijers, & Arena (2025)**  
-  ([preprint](https://osf.io/preprints/psyarxiv/k2twq_v1)) uses **large language models (LLMs)** to specify **hyperpriors** for network analysis.  
-- This is implemented in the R package [bgmElicit](https://github.com/sekulovskin/bgmElicit) and in a Shiny app: [bgmElicit App](https://uvasobe.shinyapps.io/bgmElicit/).  
-- ⚠️ Note: Using the R package currently requires an **OpenAI API key**.  
-- These tools show how prior specification is an **active area of research**: moving from Bernoulli, to Beta–Bernoulli, to SBM, and now to AI-assisted elicitation.
+- Recent work by **Sekulovski, Waaijers, & Arena (2025)**  
+  ([preprint](https://osf.io/preprints/psyarxiv/k2twq_v1)) uses **large language models (LLMs)** to elicit **hyperpriors** for network analysis.  
+- This approach is implemented in the R package [**bgmElicit**](https://github.com/sekulovskin/bgmElicit) and the [**bgmElicit App**](https://uvasobe.shinyapps.io/bgmElicit/).  
+- ⚠️ Note: using the R package currently requires an **OpenAI API key**.  
+- Together, these developments show that prior specification remains an active research frontier — evolving from simple Bernoulli assumptions, through Beta–Bernoulli and SBM priors, toward interactive and AI-assisted elicitation.
