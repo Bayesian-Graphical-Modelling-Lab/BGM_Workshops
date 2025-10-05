@@ -844,7 +844,8 @@ At the start of the workshop, we set out to:
 
 Thank you for participating in the workshop.  
 
-We hope these sessions have given you both conceptual insight and practical skills for applying Bayesian methods to graphical models.  
+We hope these sessions have given you both conceptual insight and practical skills for applying Bayesian methods to graphical models. 
+
 If you have questions or would like to discuss applications of these techniques, please feel free to reach out!
 
 
