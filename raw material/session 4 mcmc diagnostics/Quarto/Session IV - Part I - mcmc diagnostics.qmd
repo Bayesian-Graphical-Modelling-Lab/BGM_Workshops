@@ -21,15 +21,13 @@ engine: knitr
 ---
 
 ::: {.callout-tip title="Workshop Roadmap"}
-**You are here:**
+**You are here:**  
 
-📜 Part I — History: Why Bayesian network analysis became necessary ✅\
-📘 Part II — Theory: How to quantify evidence for edge inclusion or exclusion ✅\
-🔧 Part III — Practice: Basics of the Bayesian workflow ✅\
-🎯 Part IV — Theory: Priors as models of psychometric topology ✅\
-🧩 Part V — Practice: Evaluating the influence of network priors ✅\
-👥 Part VI — Practice: The Bayesian approach to group comparisons ✅\
-🔍 **Part VII — Practice: MCMC diagnostics for bgms**
+🧭 Intro — From network psychometrics to Bayesian graphical modeling ✅  
+📊 **Session I — Quantifying evidence for network edges** ✅  
+🔍 **Session II — Modeling topological structure with priors** ✅  
+🧠 **Session III — Comparing groups and testing network invariance** ✅   
+⚙️ **Session IV — MCMC diagnostics and efficiency** 🟩  
 :::
 
 ```{r setup, include=FALSE}
@@ -40,17 +38,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 So far in the workshop, you have learned how to:
 
--   **Estimate** networks in single groups and across groups
-    -   Using Bayesian methods in `bgms`, `BGGM`, and `BDgraph`.\
-    -   Interpreting posterior edge inclusion, parameter uncertainty, and group differences.
--   **Evaluate** prior assumptions about network topology
-    -   Bernoulli, Beta–Bernoulli, and Stochastic Block Models.\
-    -   Understanding how priors influence edge probabilities, density, and clustering.
--   **Test** hypotheses about invariance and differences
-    -   Using Bayes factors derived from Savage–Dickey ratios and model averaging.\
-    -   Assessing edge-level evidence and interpreting global network comparisons.
+- **Estimate and interpret** Bayesian networks within single groups,  
+  assessing edge inclusion, parameter uncertainty, and posterior evidence.
 
-------------------------------------------------------------------------
+- **Model structural assumptions** with different topological priors —  
+  Bernoulli, Beta–Bernoulli, and Stochastic Block Models —  
+  and understand how these priors shape network density and clustering.
+
+- **Compare groups** by testing invariance and differences,  
+  using Bayes factors (Savage–Dickey and model-averaged) to quantify evidence for edge and network-level effects.
+
+---
 
 ## Goals for this session
 
@@ -208,35 +206,30 @@ mtext("Density", side=2, line=2.5, cex = 1.7)
 ::: panel-tabset
 ### Tasks
 
--   **Learning Goal 1 (Warmup vs. Sampling):**\
-    Which chain is **moving too slowly and still looks influenced by where it started**?
+Look at the three traceplots and their corresponding posterior densities.
 
--   **Learning Goal 2 (Diagnostics):**\
-    Which chain shows a **systematic drift** over time, and what would $\hat{R}$ or ESS reveal about it?
-
--   **Learning Goal 2 (Diagnostics):**\
-    Which chain seems to have **settled well** into the target distribution?
-
--   **Learning Goal 2 (Diagnostics):**\
-    How do these problems show up in the **estimated posteriors** compared to the true posterior (black curve)?
+1. Which chain still looks influenced by where it started?  
+2. Which chain shows a systematic drift over time?  
+3. Which chain appears to have settled well into the target distribution?  
+4. How do these behaviors show up in the estimated posteriors compared to the true posterior (black curve)?
 
 ### Try it
 
-Discuss in small groups for 5–10 minutes.\
+Discuss in small groups for about 5–10 minutes.  
 Focus on:  
-  - Does the chain explore the full plausible range, or does it remain stuck or drifting?\
-  - Do the posterior estimates line up with the black curve (the true posterior)?\
-  - What consequences would these chain behaviors have for interpreting results?
+- Does each chain explore the full plausible range or remain stuck or drifting?  
+- Do the posterior estimates align with the black curve (the true posterior)?  
+- What would these patterns mean for interpreting results?
 
 ### Solution
 
-**Traceplot B → Posterior 3:** Well-behaved chain. It explores freely and the posterior matches the truth.\
-**Traceplot A → Posterior 2:** Still influenced by its starting point; slow to move. Posterior estimate biased.\
-**Traceplot C → Posterior 1:** Shows systematic drift. Posterior estimate shifted away from the truth.
+**Traceplot B → Posterior 3:** Well-behaved chain; explores freely, posterior matches the truth.  
+**Traceplot A → Posterior 2:** Still influenced by its starting point; moves slowly, posterior biased.  
+**Traceplot C → Posterior 1:** Systematic drift; posterior shifted away from the truth.
 
-**Takeaway messages:**\
-- A chain must both **forget its starting point** (warmup → convergence) and **move freely** around the posterior (good mixing).\
-- If either condition fails, posterior inference is misleading.
+**Take-away messages**  
+- A chain must both **forget its starting point** (warmup/convergence) and **move freely** around the posterior (good mixing).  
+- If either condition fails, posterior inference becomes unreliable.
 :::
 
 ------------------------------------------------------------------------
@@ -278,23 +271,24 @@ Let’s see how these ideas look in practice with `bgms`. We will fit a model **
 ::: panel-tabset
 ### Tasks
 
--   **Fit `bgm` with `edge_selection = FALSE` on the ADHD dataset.**\
-    → *Learning Goal 2: Compute and interpret MCMC diagnostics for bgms output.*
+1. **Fit the model**  
+   Run `bgm()` on the `ADHD` dataset with `edge_selection = FALSE`.  
+   This estimates the network without selection so we can inspect MCMC behavior.
 
--   **Produce traceplots for a few parameters.**\
-    → *Learning Goal 2: Visualize chain behavior and assess convergence by eye.*
+2. **Inspect traceplots**  
+   Produce traceplots for a few parameters.  
+   Check by eye whether the chains move freely and mix well across the full range of plausible values.
 
--   **Use the summary object to inspect** $\hat{R}$ and ESS values.\
-    → *Learning Goal 2: Interpret diagnostics as measures of convergence (*$\hat{R}$) and information content (ESS).
+3. **Check diagnostics**  
+   Use the summary output to view $\hat{R}$ and effective sample size (ESS) values.  
+   Recall:  
+   - $\hat{R}$ close to 1 indicates good convergence across chains.  
+   - Larger ESS means more precise posterior estimates.
 
--   **Decide:**
-
-    -   Do the chains look like they have converged?\
-        → *Learning Goal 1: Recognize when warmup has succeeded and chains are stationary.*\
-    -   Do the $\hat{R}$ agree?\
-        → *Learning Goal 2: Use* $\hat{R}$ as a convergence check across chains.\
-    -   Are the effective sample sizes large or small?\
-        → *Learning Goal 2: Judge the adequacy of precision via ESS.*
+4. **Evaluate**  
+   - Do the chains look stationary after warmup?  
+   - Do $\hat{R}$ values suggest convergence?  
+   - Are ESS values large enough for stable inference?
 
 ### Try it
 
@@ -430,30 +424,28 @@ In both cases, **warmup draws are discarded** because they reflect adaptation ra
 
 We now examine how these choices **show up in diagnostics**. The next exercises compare samplers and control parameters in terms of $\hat{R}$ (convergence) and ESS (information).
 
-**Goal:** With a short run, Metropolis may not reach satisfactory diagnostics, while NUTS often does.
-
 ::: panel-tabset
 ### Tasks
 
--   **Fit the ADHD model twice (`edge_selection = FALSE`):** \  
-  1) `update_method = "metropolis"`,\ 
-  2) `update_method = "nuts"`.\
-      → *Learning Goal 3: Compare samplers (Metropolis vs. NUTS).*
+1. **Fit the ADHD model twice**  
+   Estimate the model with `edge_selection = FALSE` using two update methods:  
+   - `update_method = "metropolis"`  
+   - `update_method = "nuts"`  
+   This allows you to compare how the samplers differ in convergence and efficiency.
 
--   **Inspect diagnostics:** compare $\hat{R}$ and ESS in the summaries.\
-    → *Learning Goal 2: Compute and interpret MCMC diagnostics.*
+2. **Inspect diagnostics**  
+   Compare $\hat{R}$ and ESS values in the model summaries.  
+   Check whether both samplers achieve good convergence ( $\hat{R} \approx 1$ ) and note any differences in effective sample sizes.
 
--   **Traceplots:** make traceplots for 2–4 parameters.\
-    → *Learning Goal 2: Use visual checks to assess convergence.*
+3. **Examine traceplots**  
+   Create traceplots for a few parameters from each sampler.  
+   Assess visually how quickly and smoothly each chain explores the posterior.
 
--   **Decide:**
+4. **Evaluate**  
+   - Do both samplers appear to have converged?  
+   - Which produces higher ESS for the same number of iterations?  
+   - How do the traceplots differ in terms of mixing speed and stability?
 
-    -   Do the chains look converged?\
-        → *Learning Goal 1: Recognize when chains are stationary (post-warmup).*\
-    -   Are the $\hat{R}$ values close to 1 for both samplers?\
-        → *Learning Goal 2: Interpret* $\hat{R}$ as a convergence check.\
-    -   Which sampler yields larger ESS for the same number of iterations?\
-        → *Learning Goal 3: Assess relative efficiency in terms of ESS per iteration.*
 
 ### Try it
 
@@ -511,26 +503,27 @@ The goal here is to show that Metropolis diagnostics improve when we **increase 
 ::: panel-tabset
 ### Tasks
 
-Building on the previous exercise (where Metropolis underperformed at 1,000 iterations), now examine how diagnostics improve when we adjust control parameters:
+Building on the previous exercise (where Metropolis underperformed at 1,000 iterations), now explore how diagnostics improve when you adjust the control parameters.
 
--   **Refit with Metropolis only** (`edge_selection = FALSE`).\
-    → *Learning Goal 3: Compare samplers and understand when extra sampling is needed.*
+1. **Refit the model**  
+   Run the Metropolis sampler again (`edge_selection = FALSE`), focusing on how longer runs affect convergence.
 
--   **Increase iterations** (e.g., from 1,000 → 4,000 or 8,000). Optionally **increase chains** (e.g., 4 → 6).\
-    → *Learning Goal 1: Recognize how sampling length and number of chains affect convergence and precision.*
+2. **Increase iterations**  
+   Try increasing the total number of iterations (e.g., from 1,000 → 4,000 or 8,000).  
+   Optionally, increase the number of chains (e.g., from 4 → 6).
 
--   **Inspect diagnostics:** compare $\hat{R}$ and ESS across runs.\
-    → *Learning Goal 2: Interpret convergence and precision statistics in practice.*
+3. **Inspect diagnostics**  
+   Compare $\hat{R}$ and ESS across runs.  
+   Note whether these values improve as you increase sampling length or the number of chains.
 
--   **Traceplots:** check whether the chains now look stable and overlapping.\
-    → *Learning Goal 2: Use visual checks alongside numerical diagnostics.*
+4. **Check traceplots**  
+   Examine whether chains now look stable, overlapping, and well mixed.  
+   Do they explore the full range of the posterior?
 
--   **Decide:**
-
-    -   Does $\hat{R}$ approach 1 as iterations (and/or chains) increase?\
-    -   Does ESS increase with more iterations?\
-    -   At what settings do diagnostics become satisfactory?\
-        → *Learning Goal 1 + 2: Link diagnostic outcomes directly to control parameter choices.*
+5. **Evaluate**  
+   - Does $\hat{R}$ approach 1 as iterations or chains increase?  
+   - Does ESS rise accordingly?  
+   - At what settings do diagnostics become satisfactory?
 
 ### Try it
 
@@ -726,23 +719,24 @@ We now analyze the ADHD dataset **with edge selection** using `update_method = "
 
 ### Tasks
 
-- **Fit** a `bgm` model on the ADHD dataset with  
-  `update_method = "nuts"` and `edge_selection = TRUE` (run multiple chains).  
-  → *Learning Goal 3: Apply samplers with edge selection enabled.*  
+1. **Fit the model**  
+   Estimate a `bgm` model on the `ADHD` dataset using  
+   `update_method = "nuts"` and `edge_selection = TRUE`, running multiple chains.
 
-- **Inspect the summary** for several edges:  
-  - Compare diagnostics ($\hat{R}$, ESS) for the **binary indicators** (edge inclusion), and the corresponding **spike–and–slab parameters** (pairwise interactions).  
-  - Note their posterior means.  
-  → *Learning Goal 2: Compute and interpret diagnostics in practice.*  
+2. **Inspect the summary**  
+   For several edges, compare diagnostics ($\hat{R}$, ESS) for both the **binary indicators** (edge inclusion) and the corresponding **spike–and–slab parameters** (pairwise interactions).  
+   Note their posterior means.
 
-- **Visualize chain behavior** with traceplots for the same edges.  
-  → *Learning Goal 2: Use visual checks to complement numerical diagnostics.*  
+3. **Visualize chain behavior**  
+   Create traceplots for the same edges to check whether the chains mix well and explore the posterior adequately.
 
-- **Compare across parameter types:**  
-  - Are $\hat{R}$ values acceptable for both indicators and slabs?  
-  - Are ESS values systematically lower for indicators and spike–and–slab parameters than for other continuous parameters?  
-  - How do these diagnostics compare with the ESS values you obtained earlier **without selection**?  
-  → *Learning Goal 1 & 2: Connect diagnostics to the reliability of posterior summaries.*  
+4. **Compare across parameter types**  
+   - Are $\hat{R}$ values acceptable for both indicators and slabs?  
+   - Are ESS values systematically lower for selection variables than for other continuous parameters?  
+   - How do these diagnostics compare with the ESS values you obtained earlier *without* selection?
+
+Reflect on what these patterns imply about the additional sampling difficulty introduced by discrete selection variables.
+
 
 ### Try it
 
@@ -806,14 +800,13 @@ Even with an efficient sampler (NUTS) and acceptable $\hat{R}$, **ESS for indica
 When interpreting results, always check MCSE alongside $\hat{R}$ and ESS, and if precision is insufficient, increase iterations or chains.  
 
 :::
-
 ### Closing
 
 A key feature of `bgms` is that it reports $\hat{R}$ and ESS not only for continuous parameters,  
 but also for **selection variables** (indicators and pairwise effects).  
 
 As far as we know, this is the only implementation that provides full diagnostics  
-for these discrete and mixture-valued parameters. This makes it possible to:  
+for these discrete and mixture-valued parameters. This makes it possible to:
 
 - Evaluate convergence and mixing of selection variables,  
 - Quantify how much effective information underlies edge inclusion probabilities,  
@@ -823,11 +816,35 @@ for these discrete and mixture-valued parameters. This makes it possible to:
 
 ### Take-home message
 
-This completes the **Bayesian workflow** for network models:  
+This completes the **Bayesian workflow** for network models:
 
 1. **Estimate** the model.  
 2. **Diagnose** the chains — check $\hat{R}$, ESS, and MCSE for all parameters,  
    including indicators and pairwise effects.  
-3. **Interpret** results once diagnostics confirm reliability.  
+3. **Interpret** results only after diagnostics confirm reliability.
 
-Diagnostics complete the Bayesian workflow: results should only be interpreted once the chains are shown to be reliable.
+With this final step, you have completed the full Bayesian workflow for graphical models —  
+from prior specification and model estimation to inference, comparison, and validation.  
+
+---
+
+### Back to the workshop goals
+
+At the start of the workshop, we set out to:
+
+- **Explain** the benefits of a Bayesian approach to network analysis.  
+- **Estimate and interpret** network models using R and JASP.  
+- **Understand** how priors affect network structure and complexity.  
+- **Examine** group differences using Bayes factors.  
+- **Evaluate** convergence and precision with MCMC diagnostics.  
+
+---
+
+### Closing
+
+Thank you for participating in the workshop.  
+
+We hope these sessions have given you both conceptual insight and practical skills for applying Bayesian methods to graphical models.  
+If you have questions or would like to discuss applications of these techniques, please feel free to reach out!
+
+
