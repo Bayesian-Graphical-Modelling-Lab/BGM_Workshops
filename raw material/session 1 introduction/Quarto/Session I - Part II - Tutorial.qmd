@@ -21,10 +21,13 @@ engine: knitr
 ---
 
 ::: {.callout-tip title="Workshop Roadmap"}
-**You are here:** 
+**You are here:**  
 
-📘 Session I - Part I — Foundations of Bayesian Network Analysis ✅  
-🔧 **Session I - Part II — Practical Tutorial (this lecture)**
+🧭 Intro — From network psychometrics to Bayesian graphical modeling ✅  
+📊 **Session I — Quantifying evidence for network edges** 🟩 
+🔍 Session II — Modeling topological structure with priors  
+🧠 Session III — Comparing groups and testing network invariance  
+⚙️ Session IV — MCMC diagnostics and efficiency  
 :::
 
 ```{r setup, include=FALSE}

@@ -23,12 +23,11 @@ engine: knitr
 ::: {.callout-tip title="Workshop Roadmap"}
 **You are here:**  
 
-📜 Part I — History: Why Bayesian network analysis became necessary ✅  
-📘 Part II — Theory: How to quantify evidence for edge inclusion or exclusion ✅  
-🔧 Part III — Practice: Basics of the Bayesian workflow ✅  
-🎯 Part IV — Theory: Priors as models of psychometric topology ✅  
-🧩 Part V — Practice: Evaluating the influence of network priors ✅  
-👥 **Part VI — Practice: The Bayesian approach to group comparisons**
+🧭 Intro — From network psychometrics to Bayesian graphical modeling ✅  
+📊 **Session I — Quantifying evidence for network edges** ✅  
+🔍 **Session II — Modeling topological structure with priors** ✅  
+🧠 **Session III — Comparing groups and testing network invariance** 🟩  
+⚙️ Session IV — MCMC diagnostics and efficiency  
 :::
 
 
@@ -74,7 +73,7 @@ We now extend these ideas to the case of **two (or more) groups**. At the end of
   – the Savage–Dickey approach with `BGGM` and `bgms`,  
   – model-averaged Bayesian inference with `bgms`.  
 
-- **Analyze** how prior specification influences the Savage–Dickey density ratio, and evaluate the implications for interpreting group differences.  
+- **Analyze** how the prior on the focal effect influences the Bayes factor, and evaluate the implications for interpreting group differences.  
 
 - **Interpret** Bayes factors for individual edges in terms of evidence for invariance or difference, and relate these edge-level results to conclusions about the overall network structure.
 :::
@@ -113,10 +112,10 @@ library(tidyr) # for plotting
 
 # Bayesian Software for Group Comparisons
 
-In Session III, we saw the broader ecosystem of Bayesian network software.  
+In Session I, we saw the broader ecosystem of Bayesian network software.  
 For this lecture the focus is narrower: **methods for comparing networks across groups**.  
 
-This is a very recent development. At present, only two engines implement principled Bayesian group comparison: `BGGM` and `bgms`. These capabilities have not yet been integrated into `easybgm` or `JASP` (although work is underway and the first functionality is expected later this year).  
+For `bgms`, this is a very recent development. At present, only two packages implement principled Bayesian group comparison: `BGGM` and `bgms`. These capabilities have not yet been integrated into `easybgm` or `JASP` (although work is underway and the first functionality is expected later this year).  
 
 ---
 
@@ -124,8 +123,8 @@ This is a very recent development. At present, only two engines implement princi
 
 | Package           | Data Types             | Approach                        | Bayes Factors                   | Multiplicity Correction | Highlights                                   |
 |-------------------|------------------------|---------------------------------|---------------------------------|-------------------------|----------------------------------------------|
-| **BGGM**</br><img src="figures/bggm_sticker.png" width="75px"> | Continuous (Gaussian)          | Edge estimation and comparison  | **Single-model** (Savage–Dickey)             | ❌ No                     | Tests specific edge or global differences using Gaussian models |
-| **bgms** </br><img src="figures/bgms_sticker.svg" width="75px"> | Binary, Ordinal                | Edge estimation + structure learning | **Model-averaged inclusion Bayes factors**   | ✅ Yes                    | Handles multiplicity; tests invariance and differences of edges and thresholds |  
+| **BGGM**</br><img src="figures/bggm_sticker.png" width="75px"> | Continuous (Gaussian)          | Edge estimation | **Single-model** + Ordinal constraints | ❌ No                     | Tests specific edge differences for Gaussian models |
+| **bgms** </br><img src="figures/bgms_sticker.svg" width="75px"> | Binary, Ordinal                | Edge estimation + structure learning | **Single-Model** + **Model-averaged**   | ✅ Yes                    | Handles multiplicity; tests differences ordinal model parameters |  
 
 ---
 
@@ -140,7 +139,7 @@ For now, **direct use of `BGGM` and `bgms` in R** is required when analyzing gro
 One important point:  
 - `BGGM` includes functions for computing Bayes factors and some summaries.  
 - `bgms`, in contrast, is primarily **computational software**. It performs posterior sampling internally, but does not provide Bayes factor computations or visualizations out of the box.  
-- This is where **`easybgm`** comes in: it wraps around `bgms` to offer Bayes factor tables, and plotting. These conveniences have not yet been extended to group comparisons, but development is ongoing.
+- This is where **`easybgm`** usually comes in: it wraps around `bgms` to offer Bayes factor tables, and plotting. These conveniences have not yet been extended to group comparisons, but development is ongoing.
 
 
 # Part VI — The Bayesian Approach to Group Comparisons
@@ -357,9 +356,11 @@ qgraph(
   - Red edges: strong evidence for invariance.  
   - Grey edges: inconclusive.  
 
-Later, we will discuss multiplicity correction. With correction (and an ordinal model), the evidence plot changes color:
+> Does this support the hypothesis of invariance? Why?
 
-![Edge difference evidence plot with multiplicity correction](figures/bgms_multiplicity.png){fig-align="center" width=90%}
+<!-- Later, we will discuss multiplicity correction. With correction (and an ordinal model), the evidence plot changes color: -->
+
+<!-- ![Edge difference evidence plot with multiplicity correction](figures/bgms_multiplicity.png){fig-align="center" width=90%} -->
 
 ---
 
@@ -450,7 +451,7 @@ We now turn to two Bayesian methods for testing group differences: the **Savage�
 Suppose we have two groups, for example **clinical** and **non-clinical** participants. For each pair of variables (nodes) $i,j$, `bgms` estimates a **group difference parameter**:
 
 $$
-\beta_{ij} ^{(g)} = \begin{cases}
+\theta_{ij} ^{(g)} = \begin{cases}
 \sigma_{ij} - \frac{1}{2}\delta_{ij} & \text{ if } g = 1\\
 \sigma_{ij} + \frac{1}{2}\delta_{ij} & \text{ if } g = 2
 \end{cases}
@@ -459,12 +460,14 @@ $$
 Or equivalently,
 
 $$
-\delta_{ij} = \beta^{(2)}_{ij} - \beta^{(1)}_{ij},
+\delta_{ij} = \theta^{(2)}_{ij} - \theta^{(1)}_{ij},
 $$
 
-where $\beta^{(g)}_{ij}$ is the edge parameter in group $g$.  
+where $\theta^{(g)}_{ij}$ is the edge parameter in group $g$.  
 - If $\delta_{ij}=0$, the edge is **invariant** across groups.  
 - If $\delta_{ij}\neq 0$, there is a **difference**.
+
+In **Session I**, we asked if there is an edge, and used the Bayes factor to test if the partial assocation $\theta_{ij}$ is zero or not. Here, we ask if there is an edge difference, and use the Bayes factor to test if the difference effect $\delta_{ij}$ is zero or not.  
 
 *Note:* Although not covered in the examples in this session, `bgms` can also compare **more than two groups** ($G \geq 2$). In that case, it uses a $G \times (G-1)$ projection matrix to model group differences in terms of $G-1$ contrasts. This is analogous to:  
 - two groups → $t$-test,  
@@ -684,8 +687,6 @@ library(bgms)
    - $BF_{10}>10$ → strong evidence for a difference.  
    - Otherwise → inconclusive.  
 
-*Goal*: To see concretely how **single-model Bayes factors** are constructed and interpreted, and to prepare for sensitivity analysis of prior specification.
-
 ---
 
 ### Try it
@@ -718,7 +719,7 @@ post_edge = samples[, 1]
 
 Use the above code to:  
 - Estimate the posterior density of post_edge at 0 (e.g., with logspline).  
-- Compute the Savage–Dickey Bayes factor by dividing by the prior density at 0. 
+- Compute the Savage–Dickey Bayes factor by dividing by the prior density at 0.  
 - Determine if there is evidence for invariance or difference. Or is the result inconclusive?
 
 ---
@@ -748,10 +749,6 @@ BF01; BF10
 - If BF01 > 10 → strong evidence that this edge is invariant across groups.  
 - If BF10 > 10 → strong evidence for a group difference.  
 - Otherwise → evidence is inconclusive.  
-
-**Connection to goals**  
-This solution demonstrates how a single-model Bayes factor is constructed with the Savage–Dickey ratio. It also shows how the result depends on the prior density at 0 (here from the Cauchy prior). This links back to the session goal of understanding both the mechanics of Savage–Dickey and the role of priors in interpreting group differences.
-
 :::
 
 
@@ -816,7 +813,7 @@ colnames(graph_plot) = colnames(ADHD)[-1]
 # Evidence plot
 qgraph(
   graph_plot,
-  edge.color = graph_color[lower.tri(graph_color)],
+  edge.color = graph_color[upper.tri(graph_color)],
   vsize      = 10,
   edge.width = 3,
   label.cex  = 1,
@@ -904,8 +901,6 @@ sd_diff_plot <- function(fit, edge) {
    - How does increasing the prior scale change the density at 0?  
    - What is the impact on the Bayes factor evidence?  
 
-*Goal*: Understand how **prior scale choices** influence Bayes factors.
-
 ---
 
 ### Try it
@@ -966,8 +961,6 @@ When you compare the two runs:
 **Interpretation**  
 - The Bayes factor outcome is sensitive to the prior scale.  
 - Different prior scales can shift the balance of evidence between invariance and difference.  
-- This illustrates the session goal of understanding how prior specification influences Bayes factors in group comparisons.
-
 
 :::
 
@@ -1044,8 +1037,6 @@ The next exercise demonstrates in practice how the two approaches differ, and wh
 
 - If writing an applied paper, which Bayes factor would you report — and why?  
 - For teaching and intuition, which approach do you find more transparent?  
-
-*Goal*: Understand how **single-model** and **model-averaged Bayes factors** differ in their conclusions, and how this affects both applied and pedagogical reporting.
 
 
 ### Try it
@@ -1156,8 +1147,130 @@ In the above comparison table, you will usually see that:
 - For teaching and intuition, Savage–Dickey Bayes factors are more transparent.  
 - For applied reporting, model-averaged Bayes factors are generally preferred because they properly account for model uncertainty and multiple testing.  
 
-*Connection to goals:* This solution illustrates the contrast between **single-model** and **model-averaged** Bayes factors, showing how multiplicity correction changes the evidence and why reporting choices matter.
 :::
+
+```{r, include=FALSE, eval = FALSE}
+library(bgms)
+library(logspline)
+
+# --- Fit two versions of the model on ADHD (clinical vs non-clinical) ---
+# Single-model (estimation only; Savage–Dickey computed post hoc)
+fit_est <- bgmCompare(
+  x = ADHD[ADHD$group == 0, -1],
+  y = ADHD[ADHD$group == 1, -1],
+  iter = 1000,
+  seed = 1234,
+  update_method = "nuts",
+  difference_scale = 1,
+  difference_selection = FALSE
+)
+
+# Model-averaged (selection; inclusion Bayes factors via posterior inclusion probs)
+fit_sel <- bgmCompare(
+  x = ADHD[ADHD$group == 0, -1],
+  y = ADHD[ADHD$group == 1, -1],
+  iter = 1000,
+  seed = 1234,
+  update_method = "nuts",
+  difference_scale = 1,
+  difference_prior = "Beta-Bernoulli",
+  beta_bernoulli_alpha = 1,
+  beta_bernoulli_beta  = 1,
+  difference_selection = TRUE
+)
+
+# --- Extract posterior samples of pairwise differences from the estimation fit ---
+num_vars     <- fit_est$arguments$num_variables
+num_pairwise <- num_vars * (num_vars - 1) / 2
+
+post_mat <- do.call(rbind, fit_est$raw_samples$pairwise)
+# keep only the difference columns (drop per-group pairwise effects)
+post_diff <- post_mat[, -(1:num_pairwise), drop = FALSE]
+colnames(post_diff) <- fit_est$raw_samples$parameter_names$pairwise_diff
+
+# --- Helper: posterior density at 0 via logspline ---
+posterior_d0 <- function(x) {
+  ds <- tryCatch(dlogspline(0, logspline(x)), error = function(e) NA_real_)
+  ds
+}
+
+# Prior density at 0 for the Cauchy(0, scale)
+prior_scale <- fit_est$arguments$difference_scale
+prior_d0    <- dcauchy(0, scale = prior_scale)
+
+# --- Compute BF_01 (Savage–Dickey) per edge-difference, then BF_10 = 1/BF_01 ---
+BF01_SD <- sapply(seq_len(ncol(post_diff)), function(j) posterior_d0(post_diff[, j]) / prior_d0)
+
+# matrix bf_sm[10]
+bf_sm = matrix(0, num_variables, num_variables)
+bf_sm[lower.tri(bf_sm)] = 1 / BF01_SD
+bf_sm = bf_sm + t(bf_sm)
+
+# Inclusion BFs from posterior inclusion probabilities
+pip = coef(fit_sel)$indicators
+prior_odds <- 1
+bf_bma <- (pip / (1 - pip)) / prior_odds
+
+
+
+bf = bf_sm
+# Easybgm color scheme
+colors = c("#36648b", "#990000", "#bfbfbf") 
+evidence_thresh = 10
+
+# Assign colors to edges
+graph_color = ifelse(bf < evidence_thresh & bf > 1/evidence_thresh, colors[3], colors[1])
+graph_color[bf < 1/evidence_thresh] = colors[2]
+
+# Use dummy matrix with 1s for equal edge widths
+graph_plot = matrix(1, nrow = nrow(bf), ncol = ncol(bf))
+diag(graph_plot) = 1
+colnames(graph_plot) = colnames(ADHD)[-1]
+
+# Evidence plot
+par(mfrow=c(1,2))
+q1= qgraph(
+  graph_plot,
+  edge.color = graph_color[upper.tri(graph_color)],
+  layout     = "spring",
+  vsize      = 10,
+  edge.width = 3,
+  label.cex  = 1,
+  legend     = FALSE,
+  labels     = colnames(ADHD)[-1],
+  color      = "white",   # node fill color
+  border.color = "black"  # node border color
+)
+print(q1)
+
+bf = bf_bma
+
+# Easybgm color scheme
+colors = c("#36648b", "#990000", "#bfbfbf") 
+evidence_thresh = 10
+
+# Assign colors to edges
+graph_color = ifelse(bf < evidence_thresh & bf > 1/evidence_thresh, colors[3], colors[1])
+graph_color[bf < 1/evidence_thresh] = colors[2]
+
+# Use dummy matrix with 1s for equal edge widths
+graph_plot = matrix(1, nrow = nrow(bf), ncol = ncol(bf))
+diag(graph_plot) = 1
+colnames(graph_plot) = colnames(ADHD)[-1]
+
+qgraph(
+  graph_plot,
+  edge.color = graph_color[upper.tri(graph_color)],
+  layout     = q1$layout,
+  vsize      = 10,
+  edge.width = 3,
+  label.cex  = 1,
+  legend     = FALSE,
+  labels     = colnames(ADHD)[-1],
+  color      = "white",   # node fill color
+  border.color = "black"  # node border color
+)
+```
 
 ![](figures/bgms_sm_vs_bma.png){fig-align="center" width=90%}
 
@@ -1226,9 +1339,10 @@ Reflect on the role of omnibus testing:
 In this session you have:  
 - Learned how to test group differences with **single-model Bayes factors** (Savage–Dickey) and **model-averaged Bayes factors** (inclusion BFs).  
 - Seen how **prior specification** influences Bayes factors, and how **multiplicity correction** is built into model-averaged inference.  
-- Compared the two approaches in practice, and reflected on their different uses for reporting and teaching.  
+- Compared the two approaches in practice and reflected on their use for reporting and teaching.  
 - Considered the role of **omnibus tests** and why they should be interpreted with caution.  
 
-**Take-away:** Bayesian group comparisons provide a principled way to study invariance and differences in networks. Single-model and model-averaged Bayes factors each have strengths; together, they allow us to combine intuition, transparency, and multiplicity control in reporting group comparisons.
-
+**Take-away:**  
+Bayesian group comparisons provide a principled framework for studying invariance and differences in networks.  
+They extend what we learned about edge evidence and prior specification to the **group level**, maintaining coherence with the Bayesian workflow and built-in control of multiplicity.
 
