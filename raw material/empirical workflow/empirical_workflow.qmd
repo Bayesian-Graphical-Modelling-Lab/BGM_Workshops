@@ -1,0 +1,240 @@
+---
+title: "Empirical workflow Bayesian approach to network analysis"
+author: "Maarten Marsman"
+date: "2025-10-05"
+format:
+  html:
+    css:
+     - font-awesome.min.css
+     - ajohnson.css
+    include-in-header: 
+      - text: |
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    code-fold: true
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    df-print: paged
+    self-contained: true
+engine: knitr
+---
+
+# Intended Learning Outcomes
+
+By completing these exercises, participants will be able to:
+
+1. **Formulate research questions and hypotheses** that can be examined through Bayesian graphical models.  
+
+2. **Develop an analytic plan** that links each hypothesis to the corresponding analysis.  
+   This plan should outline *what you will do*, for example:  
+   - Estimate edge inclusion and strength,  
+   - Test conditional dependencies with Bayes factors,  
+   - Explore network clustering or topology, and  
+   - Test group differences in network structure.  
+
+3. **Specify how the analyses will be carried out**, including:  
+   - Choice of **network model** (e.g., Gaussian Graphical Model, Ising model),  
+   - Specification of **priors** for structure and parameters,  
+   - Planned **sensitivity analyses** to assess robustness, and  
+   - Planned **diagnostic checks** for convergence and precision.  
+
+4. **Summarize and communicate results effectively**, including:  
+   - Estimating and visualizing posterior quantities (edges, effects, topology),  
+   - Reporting evidence (Bayes factors, posterior probabilities, uncertainty intervals), and  
+   - Presenting findings through clear plots, tables, and text consistent with scientific reporting.  
+
+5. **Assess reliability and robustness** through MCMC diagnostics and prior sensitivity checks.
+
+---
+
+# Introduction
+
+This document is a companion to the workshop, designed to guide you in **developing and executing a complete Bayesian network analysis**.  
+Its goal is not to show you how to reproduce examples from the sessions, but to help you **apply what you have learned** to your own empirical project — step by step, and with increasing independence.
+
+Rather than following the order of the workshop sessions, this document is organized around the **five key elements of the Bayesian empirical workflow**:
+
+1. **Hypothesis formulation and analytic planning**  
+2. **Modeling decisions**  
+3. **Estimation and evidence evaluation**  
+4. **Reliability and robustness**  
+5. **Interpretation and reporting**
+
+Each element corresponds to a core component of empirical research.  
+Within each, you will find:
+- **Session-based prompts** – guiding questions or suggestions based on concepts introduced in the workshop,  
+- **Assignments** – concrete tasks that advance your own analysis, and  
+- **Cliffnotes** – brief reminders of key ideas, models, or equations to help you work independently in R.
+
+The material assumes that you have completed the workshop sessions and understand the conceptual and technical foundations of Bayesian graphical modeling.  
+Here, your task is to **integrate these elements** into a coherent, reproducible empirical workflow.
+
+---
+
+# Empirical Analysis Setting
+
+To make the exercises concrete, you will work within an **empirical analysis setting**.  
+This setting can take one of two forms:
+
+1. **A replication and reanalysis task**, where you revisit an existing empirical paper and translate its analysis into a Bayesian graphical modeling framework; or  
+2. **An independent data project**, where you apply the same Bayesian workflow to your own dataset and research question.
+
+In both cases, the goal is to **translate conventional analyses into the Bayesian approach** you have learned — specifying priors, evaluating evidence, checking reliability, and interpreting uncertainty explicitly.
+
+---
+
+### Option 1 – Provided empirical example
+
+You are encouraged to work on one of the empirical datasets from the OSF repository accompanying the following preprint:
+
+> Sekulovski, N., Arena, G., Haslbeck, J. M. B., Huth, K. B. S., Friel, N., & Marsman, M. (2024). *A Stochastic Block Prior for Clustering in Graphical Models.*  
+> [Preprint available at PsyArXiv](https://osf.io/preprints/psyarxiv/29p3m_v1)
+
+The associated OSF folder containing the data is here:  
+👉 [https://osf.io/zdb2t/files/osfstorage](https://osf.io/zdb2t/files/osfstorage)
+
+The folder includes an `.rds` file with **30 cleaned datasets** corresponding to the studies summarized in **Table 1** of the preprint.  
+Each dataset represents an empirical study that was reanalyzed in the paper.
+
+You may:  
+- Inspect **Table 1** in the preprint to select a dataset with a topic of interest, or  
+- Randomly choose one dataset from the `.rds` file.
+
+Each dataset is linked to its **original publication**, which describes the study’s research questions and hypotheses.  
+
+Your task is to:  
+- Identify the **substantive questions** the original authors investigated,  
+- Follow those same questions in your own **Bayesian reanalysis**, and  
+- Use the methods learned during the workshop to address them through the Bayesian workflow outlined in this document.
+
+> **Note:** Not all datasets in the OSF folder were originally used for clustering analyses — that is fine.  
+> The crucial point is to *stay close to the original research questions* and explore how a Bayesian graphical modeling framework can address them.
+
+---
+
+### Option 2 – Your own data
+
+If you have a dataset from your own research, you are encouraged to use it instead.  
+The same workflow applies:  
+- Formulate your hypotheses,  
+- Choose an appropriate model family and priors,  
+- Fit and diagnose your models,  
+- Summarize evidence and reliability, and  
+- Communicate results transparently.
+
+---
+
+The goal of this empirical component is to ensure that, by the end of the workshop, you have completed a **full Bayesian analysis cycle** — from hypotheses to reporting — either as a reanalysis of an existing study or as a first draft of your own research project.
+
+---
+
+
+# Element 1 – Hypothesis Formulation and Analytic Planning
+
+**Purpose:**  
+Define your research questions and connect them to testable hypotheses about network structure, edge inclusion, clustering, or group differences.  
+The aim is to translate substantive theoretical ideas into statistical questions that can be addressed through Bayesian graphical models.
+
+---
+
+## Prompts
+
+### Drawing on Session I — Asking questions about edges
+
+In Session I you learned to think of a network as a system of conditional dependencies and to evaluate evidence for or against individual edges.
+
+Use that perspective here to begin outlining the questions that your Bayesian analysis will address.
+
+- What phenomenon or construct does your dataset represent?  
+- What relations between variables might be directly relevant to the research question?  
+- Which edges might exist, which might be absent, and which are most uncertain?  
+- If you have **no specific expectations**, describe what you wish to explore — for example, identifying which relations are most credible or least supported.  
+- Decide whether your goal for each relation is **detection** (*Is there an effect?*) or **estimation** (*What is the effect?*).  
+
+
+### Drawing on Session II — Extending questions to network structure
+
+Session II introduced *topological priors* and showed that uncertainty in edge evidence often reflects uncertainty in the entire network structure.  
+You can now expand your analytic plan to include questions about the **topology** of the network — overall density, complexity balance, or clustering of nodes.
+
+**Prompts:**
+- What expectations do you have about the *overall structure* of the network?  
+  - Should the network be generally sparse or dense?  
+  - Are certain groups of variables expected to form tighter clusters or domains?  
+- Which of these expectations can be expressed as *prior beliefs* about topology?  
+  - Example: “We expect few edges overall” → Bernoulli prior with small inclusion probability.  
+  - “We expect moderate density with variability” → Beta–Bernoulli prior.  
+  - “We expect clustered domains” → Stochastic Block Model prior.  
+- How do these structural expectations relate to your theoretical model of the phenomenon?  
+- How will you distinguish between modeling *specific edges* and modeling *structural patterns*?  
+- For exploratory work: which aspects of topology will you inspect to learn about structural organization (e.g., number of clusters, overall density)?
+
+**Cliffnotes:**
+- *Bernoulli prior:* expresses expected **edge density** (probability p).  
+- *Beta–Bernoulli prior:* adds **uncertainty in density**; automatically adjusts for multiplicity.  
+- *Stochastic Block Model prior:* introduces **clustering**; nodes can share community memberships.  
+- Modeling topology allows evidence to accumulate at the *structural* rather than *edge* level.
+
+---
+
+## Cliffnotes
+
+- *Edge-level questions* address conditional dependence or independence between variables.  
+- *Structural questions* (introduced later) concern overall topology, density, or clusters.  
+- Evidence guidelines (Jeffreys 1961):  
+  - \( BF_{10} < 1/3 \) → moderate against  
+  - \( 1/3 \le BF_{10} \le 3 \) → inconclusive  
+  - \( BF_{10} > 3 \) → moderate for
+
+
+---
+
+
+# Element 2 – Modeling Decisions
+
+
+**Purpose:**
+Translate hypotheses into formal models by choosing a model family, priors, and updating scheme.
+
+
+**Connections to sessions:**
+- Session I (Tutorial): Estimating posterior inclusion and Bayes factors.
+- Session II (Theory & Tutorial): Priors over topology (Bernoulli, Beta–Bernoulli, SBM).
+- Session IV (Intro): Warmup and sampling efficiency (Metropolis vs. NUTS).
+
+
+**Prompts & Tasks:**
+- Which model family fits your data (e.g., Gaussian, Ising)?
+- Which prior best expresses your expectations about network density or clustering?
+- How will you test the robustness of these assumptions (e.g., vary hyperparameters)?
+- Which sampler and number of iterations will you use, and why?
+- How will you document and justify these choices in your Methods section?
+
+
+**Cliffnotes:**
+- `edge_prior = "Bernoulli"` → fixed density expectation.
+- `edge_prior = "Beta-Bernoulli"` → adaptive multiplicity correction.
+- `edge_prior = "Stochastic-Block"` → explicit clustering.
+- Always report sampler type, warmup length, and total iterations.
+
+
+---
+
+
+# Element 3 – Estimation and Evidence Evaluation
+
+
+**Purpose:**
+Estimate parameters, quantify evidence for hypotheses, and summarize posterior results.
+
+
+**Connections to sessions:**
+- Session I (Evidence): Posterior inclusion, Bayes factors.
+- Session III (Group Comparison): Savage–Dickey ratio for edge differences.
+
+
+**Prompts & Tasks:**
+- Fit your model(s) using chosen priors and sampler.
+- Extract posterior inclusion probabilities or Bayes factors for hypotheses.
+- Explicitly note what remains uncertain or ambiguous.

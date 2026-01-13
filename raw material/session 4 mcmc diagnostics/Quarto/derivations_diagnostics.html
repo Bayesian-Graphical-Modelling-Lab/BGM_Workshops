@@ -9,7 +9,7 @@
 <meta name="author" content="Maarten Marsman">
 <meta name="dcterms.date" content="2025-10-03">
 
-<title>Derivations for Spike-and-Slab Summary Statistics</title>
+<title>Derivations for Spike-and-Slab Summary Statistics in bgms</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -3568,13 +3568,15 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#delta-method-approximation" id="toc-delta-method-approximation" class="nav-link" data-scroll-target="#delta-method-approximation">Delta Method Approximation</a></li>
   <li><a href="#effective-sample-size" id="toc-effective-sample-size" class="nav-link" data-scroll-target="#effective-sample-size">Effective Sample Size</a></li>
+  <li><a href="#covariance-correction-in-the-delta-method" id="toc-covariance-correction-in-the-delta-method" class="nav-link" data-scroll-target="#covariance-correction-in-the-delta-method">Covariance Correction in the Delta Method</a></li>
+  <li><a href="#interpretation" id="toc-interpretation" class="nav-link" data-scroll-target="#interpretation">Interpretation</a></li>
   </ul></li>
   </ul></li>
   <li><a href="#shared-indicator-for-vector-of-parameters" id="toc-shared-indicator-for-vector-of-parameters" class="nav-link" data-scroll-target="#shared-indicator-for-vector-of-parameters">3. Shared Indicator for Vector of Parameters</a></li>
   <li><a href="#edge-cases" id="toc-edge-cases" class="nav-link" data-scroll-target="#edge-cases">4. Edge Cases</a></li>
   <li><a href="#gelman-rubin-diagnostic-hatr" id="toc-gelman-rubin-diagnostic-hatr" class="nav-link" data-scroll-target="#gelman-rubin-diagnostic-hatr">Gelman-Rubin Diagnostic (<span class="math inline">\(\hat{R}\)</span>)</a>
   <ul class="collapse">
-  <li><a href="#hatr-for-indicator-variables-gamma" id="toc-hatr-for-indicator-variables-gamma" class="nav-link" data-scroll-target="#hatr-for-indicator-variables-gamma">3.1 <span class="math inline">\(\hat{R}\)</span> for Indicator Variables (<span class="math inline">\(\gamma\)</span>)</a></li>
+  <li><a href="#hatr-for-indicator-variables-gamma" id="toc-hatr-for-indicator-variables-gamma" class="nav-link" data-scroll-target="#hatr-for-indicator-variables-gamma"><span class="math inline">\(\hat{R}\)</span> for Indicator Variables (<span class="math inline">\(\gamma\)</span>)</a></li>
   <li><a href="#hatr-for-slab-values-theta-mid-gamma-1" id="toc-hatr-for-slab-values-theta-mid-gamma-1" class="nav-link" data-scroll-target="#hatr-for-slab-values-theta-mid-gamma-1">3.2 <span class="math inline">\(\hat{R}\)</span> for Slab Values (<span class="math inline">\(\theta \mid \gamma = 1\)</span>)</a></li>
   <li><a href="#hatr-for-spike-and-slab-parameter-theta-gamma-cdot-theta_1" id="toc-hatr-for-spike-and-slab-parameter-theta-gamma-cdot-theta_1" class="nav-link" data-scroll-target="#hatr-for-spike-and-slab-parameter-theta-gamma-cdot-theta_1">3.3 <span class="math inline">\(\hat{R}\)</span> for Spike-and-Slab Parameter (<span class="math inline">\(\theta = \gamma \cdot \theta_1\)</span>)</a></li>
   <li><a href="#notes-on-robustness" id="toc-notes-on-robustness" class="nav-link" data-scroll-target="#notes-on-robustness">Notes on Robustness</a></li>
@@ -3586,7 +3588,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Derivations for Spike-and-Slab Summary Statistics</h1>
+<h1 class="title">Derivations for Spike-and-Slab Summary Statistics in bgms</h1>
 </div>
 
 
@@ -3617,8 +3619,7 @@ window.Quarto = {
 
 <section id="overview" class="level1">
 <h1>Overview</h1>
-<p>This document provides a detailed mathematical foundation for the summary statistics and diagnostics used in spike-and-slab Bayesian models. We derive the effective sample size (ESS), Monte Carlo standard error (MCSE), and posterior summaries for both inclusion indicators and spike-and-slab parameters.</p>
-<hr>
+<p>This document provides a detailed mathematical derivation for the summary statistics and diagnostics used in spike-and-slab Bayesian models, as we have implemented in <code>bgms</code>. We derive the effective sample size (ESS), Monte Carlo standard error (MCSE), and posterior summaries for both inclusion indicators and spike-and-slab parameters, and for derived statistics, i.e., the inclusion Bayes factor.</p>
 </section>
 <section id="indicator-variables-as-two-state-markov-chains" class="level1">
 <h1>1. Indicator Variables as Two-State Markov Chains</h1>
@@ -3648,12 +3649,47 @@ window.Quarto = {
 <li><span class="math inline">\(\hat{b}\)</span> is the probability of switching from 1 to 0</li>
 </ul>
 <p>The total switching probability, <span class="math inline">\(\hat{a} + \hat{b}\)</span>, quantifies how often the indicator moves between its two states (<span class="math inline">\(0 \leftrightarrow 1\)</span>). This directly relates to the <strong>mixing rate</strong> of the Markov chain: the higher the switching rate, the better the mixing. Conversely, a chain that switches rarely (i.e., <span class="math inline">\(\hat{a} + \hat{b}\)</span> is close to 0) will exhibit strong autocorrelation.</p>
-<p>We approximate the <strong>integrated autocorrelation time</strong> <span class="math inline">\(\tau\)</span> using the formula:</p>
-<p><span class="math display">\[
-\tau = \frac{2 - (\hat{a} + \hat{b})}{\hat{a} + \hat{b}}
+<p>Consider the variance of the average of the Markov chain <span class="math display">\[
+\text{Var}(\bar{\gamma}) = \frac{1}{T^2} \sum_{s=1}^T\sum_{t=1}^T\text{Cov}(\gamma_s\text{, }\gamma_t) = \frac{1}{T^2}\sum_{t=1}^T\text{Var}(\gamma_t) + \frac{2}{T^2}\sum_{t=1}^{T-1}\sum_{s=t+1}^T \text{Cov}(\gamma_t\text{, }\gamma_s).
+\]</span> Under the <em>assumption of stationarity</em>, it holds that <span class="math inline">\(\text{Cov}(\gamma_t\text{, }\gamma_{t+k}) = \text{Var}(\gamma)\, \rho_k = \sigma^2\,\rho_k\)</span>, where <span class="math inline">\(\rho_k\)</span> is the lag-<span class="math inline">\(k\)</span> autocorrelation. Now, we make use of the following simplification: <span class="math display">\[\begin{align}
+\frac{2}{T^2}\sum_{t=1}^{T-1}\sum_{s=t+1}^T \text{Cov}(\gamma_t\text{, }\gamma_s)
+&amp;= \frac{2\sigma^2}{T^2}\sum_{t=1}^{T-1}\sum_{k=1}^{T-t} \rho_k\\
+&amp;= \frac{2\sigma^2}{T^2}\sum_{k=1}^{T-1} \rho_k (T - k)\\
+&amp;= \frac{2\sigma^2}{T}\sum_{k=1}^{T-1} \rho_k (1 - k/T),
+\end{align}\]</span> which, again <em>assuming stationarity</em>, shows that the variance of <span class="math inline">\(\bar{\gamma}\)</span> becomes <span class="math display">\[
+\text{Var}(\bar{\gamma}) = \frac{1}{T}\, \sigma^2\left(1 + 2\sum_{k=1}^{T-1} \rho_k (1 - k/T)\right).
+\]</span> as <span class="math inline">\(T \rightarrow \infty\)</span> this expression tends to <span class="math inline">\(T^{-1}\,\sigma^2\,\tau\)</span>, where <span class="math display">\[
+\tau = 1 + 2\sum_{k=1}^{\infty}\rho_k,
+\]</span> which is the integrated autocorrelation time. It indicates how many steps a Markov chain needs to take to produce an independent sample, essentially quantifying the “memory” or correlation within the sequence.</p>
+<p>We defined the parameter <span class="math inline">\(\rho_k\)</span>, the lag-<span class="math inline">\(k\)</span> autocorrelation, as <span class="math display">\[
+\rho_k = \frac{\text{Cov}(\gamma_t\text{, }\gamma_{t+k})}{\sqrt{\text{Var}(\gamma_t)\, \text{Var}(\gamma_{t+k})}} = \frac{\text{Cov}(\gamma_t\text{, }\gamma_{t+k})}{\text{Var}(\gamma_t)},
+\]</span> where the latter simplification follows from the <em>assumption of stationarity</em>. Now, <span class="math inline">\(\text{Var}(\gamma_t) = \pi(1-\pi)\)</span>, and <span class="math inline">\(\text{Cov}(\gamma_t\text{, }\gamma_{t+k}) = \mathbb{E}(\gamma_t\gamma_{t+k})-\mathbb{E}(\gamma_t)\mathbb{E}(\gamma_{t+k}) = \mathbb{E}(\gamma_t\gamma_{t+k})-\pi^2\)</span>. <span class="math inline">\(\mathbb{E}(\gamma_t\gamma_{t+k}) = p(\gamma_{t} = 1\text{, }\gamma_{t+k}=1) = p(\gamma_t = 1)\, p(\gamma_{t+k}=1 \mid \gamma_t = 1)\)</span>.</p>
+<p>The order <span class="math inline">\(k\)</span> transition probability of a two state Markov chain can be computed as <span class="math display">\[
+\mathbf{P}^k = \begin{pmatrix}
+1-a &amp; a\\
+b &amp; 1-b
+\end{pmatrix}^k= \begin{pmatrix}
+1-\pi &amp; \pi\\
+1-\pi &amp; \pi
+\end{pmatrix} + \lambda^k \left(\mathbf{P}- \begin{pmatrix}
+1-\pi &amp; \pi\\
+1-\pi &amp; \pi
+\end{pmatrix}\right),
+\]</span> which shows that <span class="math inline">\(P(1,1)^k = p(\gamma_{t+k}=1 \mid \gamma_t = 1) = \pi + (1 - \pi) \lambda^k\)</span>.</p>
+<p><strong>Note Maarten</strong>: Check this equation in Norris.</p>
+<p>Taken together, we have <span class="math inline">\(\text{Cov}(\gamma_t\text{, }\gamma_{t+k}) = \pi(1-\pi)\lambda^k,\)</span> and <span class="math display">\[
+\rho_k = \frac{\text{Cov}(\gamma_t\text{, }\gamma_{t+k})}{\text{Var}(\gamma_t)} = \frac{\pi(1-\pi)\lambda^k}{\pi(1-\pi)} = \lambda^k
 \]</span></p>
-<p>This formula arises from the spectral properties of a two-state Markov chain and gives an interpretable estimate of how many MCMC draws are needed to get one effectively independent sample.</p>
-<p>Finally, the <strong>effective sample size (ESS)</strong> for the indicator chain is estimated as:</p>
+<p>We can now express the <strong>integrated autocorrelation time</strong> <span class="math inline">\(\tau\)</span> as <span class="math display">\[
+\tau = 1 + 2 \sum_{k=1}^\infty\rho_k = 1 + 2 \sum_{k=1}^\infty\lambda^k,
+\]</span> which involves a geometric series; <span class="math display">\[
+\tau = 1 + 2 \frac{\lambda}{1-\lambda} = \frac{1+\lambda}{1-\lambda},
+\]</span> Now, <span class="math inline">\(\lambda\)</span> is the second eigenvalue of <span class="math inline">\(\mathbf{P}\)</span>, and is equal to <span class="math inline">\(\lambda = 1 - a - b\)</span>,<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> so <span class="math display">\[
+\tau = \frac{2-a-b}{a+b}
+\]</span></p>
+<p>We approximate the <em>integrated autocorrelation time</em> <span class="math inline">\(\tau\)</span> as <span class="math display">\[
+\tau = \frac{2 - (\hat{a} + \hat{b})}{\hat{a} + \hat{b}},
+\]</span> and use it to define the <strong>effective sample size (ESS)</strong> for the indicator chain as:</p>
 <p><span class="math display">\[
 \text{ESS} = \frac{T}{\tau}
 \]</span></p>
@@ -3662,7 +3698,6 @@ window.Quarto = {
 \text{sd}(\gamma) = \sqrt{\hat{p}(1 - \hat{p})}, \quad
 \text{MCSE}(\hat{p}) = \frac{\text{sd}(\gamma)}{\sqrt{\text{ESS}}}
 \]</span></p>
-<hr>
 </section>
 </section>
 <section id="spike-and-slab-posterior-summaries" class="level1">
@@ -3683,7 +3718,7 @@ window.Quarto = {
 \end{cases}
 \end{aligned}
 \]</span></p>
-<p>where <span class="math inline">\(\theta_1 \sim p(\theta_1)\)</span> is a continuous prior (e.g., Normal) defined on the slab.</p>
+<p>where <span class="math inline">\(\theta_1 \sim p(\theta_1)\)</span> is a continuous prior (e.g., Cauchy) defined on the slab.</p>
 <p>Thus, the <strong>marginal prior</strong> for <span class="math inline">\(\theta\)</span> is a mixture:</p>
 <p><span class="math display">\[
 p(\theta) = (1 - p) \cdot \delta_0(\theta) + p \cdot p(\theta_1)
@@ -3756,26 +3791,21 @@ p(\theta) = (1 - p) \cdot \delta_0(\theta) + p \cdot p(\theta_1)
 <p>Both <span class="math inline">\(\hat{p}\)</span> and <span class="math inline">\(\hat{\mu}\)</span> are <strong>estimated from MCMC draws</strong>, and each comes with its own Monte Carlo uncertainty. To propagate this uncertainty into <span class="math inline">\(\hat{\theta}\)</span>, we apply the <strong>delta method</strong>, a general approach for approximating the variance of a function of random variables.</p>
 <section id="delta-method-approximation" class="level3">
 <h3 class="anchored" data-anchor-id="delta-method-approximation">Delta Method Approximation</h3>
-<p>In general, the variance of a product of two random variables <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> is:</p>
+<p>We are estimating a quantity <span class="math inline">\(\hat{\theta} = \hat{p} \cdot \hat{\mu}\)</span>, the product of two estimators. To approximate its variance, we use the <strong>delta method</strong>.</p>
+<p>Let <span class="math inline">\(f(p, \mu) = p \cdot \mu\)</span>. The delta method gives:<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 <p><span class="math display">\[
-\operatorname{Var}(XY) =
-\mathbb{E}[X]^2 \cdot \operatorname{Var}(Y) +
-\mathbb{E}[Y]^2 \cdot \operatorname{Var}(X) +
-\operatorname{Var}(X)\operatorname{Var}(Y) +
-2 \cdot \operatorname{Cov}(X, Y)^2
+\operatorname{Var}(f(\hat{p}, \hat{\mu})) \approx
+\mu^2 \cdot \operatorname{Var}(\hat{p}) +
+p^2 \cdot \operatorname{Var}(\hat{\mu}) +
+2 \cdot p \mu \cdot \operatorname{Cov}(\hat{p}, \hat{\mu}).
 \]</span></p>
-<p>However, the <strong>delta method approximation</strong> assumes that <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> are <strong>uncorrelated</strong> (or weakly correlated), so the final two terms are dropped. Under this approximation:</p>
-<p><span class="math display">\[
-\operatorname{Var}(XY) \approx
-\mathbb{E}[X]^2 \cdot \operatorname{Var}(Y) +
-\mathbb{E}[Y]^2 \cdot \operatorname{Var}(X)
-\]</span></p>
-<p>Applying this to <span class="math inline">\(\hat{\theta} = \hat{p} \cdot \hat{\mu}\)</span> gives:</p>
+<p>In practice, we often assume that <span class="math inline">\(\hat{p}\)</span> and <span class="math inline">\(\hat{\mu}\)</span> are weakly correlated or uncorrelated, in which case the final covariance term is dropped:</p>
 <p><span class="math display">\[
 \operatorname{Var}(\hat{\theta}) \approx
-\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
-\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu})
+\mu^2 \cdot \operatorname{Var}(\hat{p}) +
+p^2 \cdot \operatorname{Var}(\hat{\mu})
 \]</span></p>
+<p>This is currently the approach used in <code>bgms</code>.</p>
 <p>Taking the square root yields the <strong>Monte Carlo Standard Error (MCSE)</strong>:</p>
 <p><span class="math display">\[
 \text{MCSE}(\hat{\theta}) = \sqrt{
@@ -3814,7 +3844,151 @@ p(\theta) = (1 - p) \cdot \delta_0(\theta) + p \cdot p(\theta_1)
 <p><span class="math display">\[
 \text{ESS}_{\text{combined}} = \frac{\operatorname{Var}(\theta)}{\operatorname{Var}(\hat{\theta})}
 \]</span></p>
-<p>This gives a meaningful, interpretable estimate of how many effectively independent samples were used to estimate <span class="math inline">\(\hat{\theta}\)</span> — accounting for both model-based uncertainty and sampling error.</p>
+</section>
+<section id="covariance-correction-in-the-delta-method" class="level3">
+<h3 class="anchored" data-anchor-id="covariance-correction-in-the-delta-method">Covariance Correction in the Delta Method</h3>
+<p>In this section, we derive the full delta method variance approximation for the spike-and-slab estimator:</p>
+<p><span class="math display">\[
+\hat{\theta} = \hat{p} \cdot \hat{\mu}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\hat{p} = \frac{1}{T} \sum_{t=1}^T \gamma_t\)</span> is the mean inclusion probability</li>
+<li><span class="math inline">\(\hat{\mu} = \frac{1}{T_{\text{inc}}} \sum_{t:\gamma_t = 1} \theta_t\)</span> is the conditional mean of slab values when selected</li>
+</ul>
+<section id="delta-method-with-covariance-term" class="level4">
+<h4 class="anchored" data-anchor-id="delta-method-with-covariance-term">Delta Method with Covariance Term</h4>
+<p>Let <span class="math inline">\(f(p, \mu) = p \cdot \mu\)</span>. The delta method gives:</p>
+<p><span class="math display">\[
+\operatorname{Var}(f(\hat{p}, \hat{\mu})) \approx
+\mu^2 \cdot \operatorname{Var}(\hat{p}) +
+p^2 \cdot \operatorname{Var}(\hat{\mu}) +
+2 \cdot p \mu \cdot \operatorname{Cov}(\hat{p}, \hat{\mu})
+\]</span></p>
+<p>We now aim to derive a <strong>closed-form approximation for the covariance term</strong>, <span class="math inline">\(\operatorname{Cov}(\hat{p}, \hat{\mu})\)</span>, under the assumption that:</p>
+<ul>
+<li><span class="math inline">\(\hat{p}\)</span> is a sample mean over binary indicators <span class="math inline">\(\gamma_t\)</span></li>
+<li><span class="math inline">\(\hat{\mu}\)</span> is a conditional mean over selected slab values</li>
+</ul>
+</section>
+<section id="total-sums-formulation" class="level4">
+<h4 class="anchored" data-anchor-id="total-sums-formulation">Total Sums Formulation</h4>
+<p>Define the total inclusion and total mass:</p>
+<ul>
+<li><span class="math inline">\(S_\gamma = \sum_{t=1}^T \gamma_t = T \cdot \hat{p}\)</span></li>
+<li><span class="math inline">\(S_\theta = \sum_{t=1}^T \gamma_t \theta_t = T_{\text{inc}} \cdot \hat{\mu}\)</span></li>
+</ul>
+<p>Then we can express:</p>
+<p><span class="math display">\[
+\hat{p} = \frac{S_\gamma}{T}, \quad
+\hat{\mu} = \frac{S_\theta}{S_\gamma}
+\]</span></p>
+<p>Hence, the estimator is:</p>
+<p><span class="math display">\[
+\hat{\theta} = \hat{p} \cdot \hat{\mu} = \frac{S_\theta}{T}
+\]</span></p>
+<p>Now consider:</p>
+<p><span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) = \operatorname{Cov}\left( \frac{S_\gamma}{T}, \frac{S_\theta}{S_\gamma} \right)
+\]</span></p>
+<p>This is nonlinear, but we can linearize it using a first-order Taylor approximation.</p>
+</section>
+<section id="taylor-approximation" class="level4">
+<h4 class="anchored" data-anchor-id="taylor-approximation">Taylor Approximation</h4>
+<p>Let us linearize <span class="math inline">\(\hat{\mu} = \frac{S_\theta}{S_\gamma}\)</span> around the means of <span class="math inline">\(S_\gamma\)</span> and <span class="math inline">\(S_\theta\)</span>, using a two-variable Taylor expansion. First, define: <span class="math display">\[
+\hat{\mu} = f(S_\gamma, S_\theta) = \frac{S_\theta}{S_\gamma}.
+\]</span> We now perform a <strong>first-order Taylor expansion</strong> of <span class="math inline">\(f\)</span> around the expected values: <span class="math display">\[
+S_\gamma \approx \mathbb{E}[S_\gamma], \qquad S_\theta \approx \mathbb{E}[S_\theta],
+\]</span> which gives: <span class="math display">\[
+f(S_\gamma, S_\theta)
+\approx
+f(\bar{S}_\gamma, \bar{S}_\theta)
++ \frac{\partial f}{\partial S_\gamma} \Big|_{\bar{S}} (S_\gamma - \bar{S}_\gamma)
++ \frac{\partial f}{\partial S_\theta} \Big|_{\bar{S}} (S_\theta - \bar{S}_\theta)
+\]</span> This linearizes <span class="math inline">\(f\)</span> as a function of <span class="math inline">\(S_\gamma\)</span> and <span class="math inline">\(S_\theta\)</span>.</p>
+<p>We can determine the partial derivatives as: <span class="math display">\[
+\frac{\partial f}{\partial S_\gamma} = -\frac{S_\theta}{S_\gamma^2}, \quad
+\frac{\partial f}{\partial S_\theta} = \frac{1}{S_\gamma},
+\]</span> and approximate the covariance between <span class="math inline">\(\hat{p}\)</span> and <span class="math inline">\(\hat{\mu}\)</span> using their dependence on <span class="math inline">\(S_\gamma\)</span> and <span class="math inline">\(S_\theta\)</span>. Recall: <span class="math inline">\(\hat{p} = S_\gamma / T\)</span>, so it is <strong>linear</strong> in <span class="math inline">\(S_\gamma\)</span>. Using the linearized form of <span class="math inline">\(\hat{\mu}\)</span> above, and treating <span class="math inline">\(\hat{p}\)</span> as a linear function of <span class="math inline">\(S_\gamma\)</span>, we can then plug this linear function into the covariance expression: <span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) =
+\operatorname{Cov}\left( \hat{p},\;
+f(\bar{S}_\gamma, \bar{S}_\theta)
++ \frac{\partial f}{\partial S_\gamma}(S_\gamma - \bar{S}_\gamma)
++ \frac{\partial f}{\partial S_\theta}(S_\theta - \bar{S}_\theta)
+\right)
+\]</span> The constant term drops out, and we apply <strong>bilinearity of covariance</strong>:</p>
+<p><span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) \approx
+\frac{\partial f}{\partial S_\gamma} \cdot \operatorname{Cov}(\hat{p}, S_\gamma)
++ \frac{\partial f}{\partial S_\theta} \cdot \operatorname{Cov}(\hat{p}, S_\theta)
+\]</span> This is the multivariate delta method.</p>
+<p>We compute:</p>
+<ul>
+<li><span class="math inline">\(\operatorname{Cov}(\hat{p}, S_\gamma) = \operatorname{Cov}(S_\gamma/T, S_\gamma) = \frac{1}{T} \cdot \operatorname{Var}(S_\gamma)\)</span></li>
+<li><span class="math inline">\(\operatorname{Cov}(\hat{p}, S_\theta) = \operatorname{Cov}(S_\gamma/T, S_\theta) = \frac{1}{T} \cdot \operatorname{Cov}(S_\gamma, S_\theta)\)</span></li>
+</ul>
+<p>Plugging in:</p>
+<p><span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) \approx
+- \frac{S_\theta}{S_\gamma^2} \cdot \frac{1}{T} \cdot \operatorname{Var}(S_\gamma)
++ \frac{1}{S_\gamma} \cdot \frac{1}{T} \cdot \operatorname{Cov}(S_\gamma, S_\theta)
+\]</span> Now substitute <span class="math inline">\(S_\gamma = T \cdot \hat{p}\)</span>, <span class="math inline">\(S_\theta = T \cdot \hat{p} \cdot \hat{\mu}\)</span>: <span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) \approx
+- \frac{\hat{p} \hat{\mu}}{T \hat{p}^2} \cdot \operatorname{Var}(S_\gamma)
++ \frac{1}{T \hat{p}} \cdot \operatorname{Cov}(S_\gamma, S_\theta)
+\]</span> Simplify: <span class="math display">\[
+\operatorname{Cov}(\hat{p}, \hat{\mu}) \approx
+- \frac{\hat{\mu}}{T \hat{p}} \cdot \operatorname{Var}(S_\gamma)
++ \frac{1}{T \hat{p}} \cdot \operatorname{Cov}(S_\gamma, S_\theta)
+\]</span></p>
+</section>
+<section id="piecing-the-two-delta-approximations-together" class="level4">
+<h4 class="anchored" data-anchor-id="piecing-the-two-delta-approximations-together">Piecing The Two Delta Approximations Together</h4>
+<p>Recall that we had : <span class="math display">\[
+\operatorname{Var}(\hat{\theta}) \approx
+\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu}) +
+2 \cdot \hat{p} \cdot \hat{\mu} \cdot \operatorname{Cov}(\hat{p}, \hat{\mu})
+\]</span> Insert the expression above for the covariance term: <span class="math display">\[
+\operatorname{Var}(\hat{\theta}) \approx
+\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu}) +
+2 \cdot \hat{p} \cdot \hat{\mu} \cdot
+\left(
+- \frac{\hat{\mu}}{T \hat{p}} \cdot \operatorname{Var}(S_\gamma)
++ \frac{1}{T \hat{p}} \cdot \operatorname{Cov}(S_\gamma, S_\theta)
+\right)
+\]</span> This simplifies to: <span class="math display">\[
+\operatorname{Var}(\hat{\theta}) \approx
+\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu}) -
+\frac{2 \hat{\mu}^2}{T} \cdot \operatorname{Var}(S_\gamma) +
+\frac{2 \hat{\mu}}{T} \cdot \operatorname{Cov}(S_\gamma, S_\theta)
+\]</span></p>
+<p>To unify the notation, we now express all variance and covariance terms directly in terms of <span class="math inline">\(\hat{p}\)</span> and <span class="math inline">\(\hat{\mu}\)</span>. We substitute:</p>
+<ul>
+<li><span class="math inline">\(S_\gamma = T \cdot \hat{p}\)</span></li>
+<li><span class="math inline">\(S_\theta = T \cdot \hat{\theta} = T \cdot \hat{p} \cdot \hat{\mu}\)</span></li>
+<li><span class="math inline">\(\operatorname{Var}(S_\gamma) = T^2 \cdot \operatorname{Var}(\hat{p})\)</span></li>
+<li><span class="math inline">\(\operatorname{Cov}(S_\gamma, S_\theta) = T^2 \cdot \operatorname{Cov}(\hat{p}, \hat{\theta})\)</span></li>
+</ul>
+<p>Plugging these into the expanded delta-method expression gives:</p>
+<p><span class="math display">\[
+\operatorname{Var}(\hat{\theta}) \approx
+\hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+\hat{p}^2 \cdot \operatorname{Var}(\hat{\mu}) -
+2T \cdot \hat{\mu}^2 \cdot \operatorname{Var}(\hat{p}) +
+2T \cdot \hat{\mu} \cdot \operatorname{Cov}(\hat{p}, \hat{\theta})
+\]</span> This expression connects the marginal (<span class="math inline">\(\hat{p}\)</span>), conditional (<span class="math inline">\(\hat{\mu}\)</span>), and joint (<span class="math inline">\(\hat{\theta}\)</span>) estimators.</p>
+</section>
+</section>
+<section id="interpretation" class="level3">
+<h3 class="anchored" data-anchor-id="interpretation">Interpretation</h3>
+<ul>
+<li>The <strong>negative correction</strong> (involving <span class="math inline">\(\operatorname{Var}(S_\gamma)\)</span>) reflects the curvature of <span class="math inline">\(\hat{\mu}\)</span> as a function of the inclusion rate.</li>
+<li>The <strong>positive correction</strong> (involving <span class="math inline">\(\operatorname{Cov}(S_\gamma, S_\theta)\)</span>) accounts for shared variation in when and how much mass is selected.</li>
+</ul>
+<p>In practice, this second term is often negligible. But the first (negative) correction can be substantial when <span class="math inline">\(\hat{p}\)</span> is small or the indicator chain is sticky.</p>
 <hr>
 </section>
 </section>
@@ -3854,9 +4028,8 @@ p(\theta) = (1 - p) \cdot \delta_0(\theta) + p \cdot p(\theta_1)
 <section id="gelman-rubin-diagnostic-hatr" class="level1">
 <h1>Gelman-Rubin Diagnostic (<span class="math inline">\(\hat{R}\)</span>)</h1>
 <p>The Gelman-Rubin diagnostic <span class="math inline">\(\hat{R}\)</span> measures the ratio of <strong>between-chain variance</strong> to <strong>within-chain variance</strong>. A value close to 1 indicates convergence across chains. In the context of spike-and-slab models, we distinguish between three cases:</p>
-<hr>
 <section id="hatr-for-indicator-variables-gamma" class="level3">
-<h3 class="anchored" data-anchor-id="hatr-for-indicator-variables-gamma">3.1 <span class="math inline">\(\hat{R}\)</span> for Indicator Variables (<span class="math inline">\(\gamma\)</span>)</h3>
+<h3 class="anchored" data-anchor-id="hatr-for-indicator-variables-gamma"><span class="math inline">\(\hat{R}\)</span> for Indicator Variables (<span class="math inline">\(\gamma\)</span>)</h3>
 <p>Each indicator chain is a binary sequence <span class="math inline">\(\gamma_t \in \{0, 1\}\)</span>. We estimate the posterior inclusion probability in each chain:</p>
 <p><span class="math display">\[
 \bar{\gamma}_c = \frac{1}{T} \sum_{t=1}^{T} \gamma_{t}^{(c)}
@@ -3926,7 +4099,14 @@ s_c^2 = \bar{\gamma}_c \cdot \operatorname{Var}(\theta_{c \mid \gamma = 1}) + \b
 </section>
 </section>
 
-</main>
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>We wish to solve the following equation for <span class="math inline">\(\lambda\)</span>: <span class="math inline">\(\det(\mathbf{P} - \lambda\mathbf{I})\)</span>. Using the determinant formula for two by two matrices, we find the equation: <span class="math inline">\(\lambda^2 + \lambda (-2 +a +b) + 1 - a - b = 0\)</span>. Using the Quadratic formula, we find two solutions: <span class="math inline">\(\lambda_1 = 1\)</span> and <span class="math inline">\(\lambda_2 = 1-a-b\)</span>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>The first order Taylor expansion of <span class="math inline">\(h(\hat{p}\text{, }\hat{\mu})\)</span> is <span class="math inline">\(h(p\text{, }\mu) + \Delta_p \, (\hat{p} - p) +  \Delta_\mu \, (\hat{\mu} - \mu) = h(p\text{, }\mu) + \mu \, (\hat{p} - p) +  p \, (\hat{\mu} - \mu)\)</span>. Take the variance on both sides: <span class="math inline">\(\text{Var}(h(\hat{p}\text{, }\hat{\mu})) \approx 0 + \text{Var}\left(\mu\, (\hat{p} - p) +  p\, (\hat{\mu} - \mu)\right) = \text{Var}(\mu\,\hat{p} + p\, \hat{\mu})\)</span> since the variance of a constant is zero. The variance of a sum <span class="math inline">\(\text{Var}(aX+bY) = a^2\text{Var}(X) + b^2\text{Var}(Y) + 2ab\text{Cov}(X\text{, }Y)\)</span>, so we get <span class="math inline">\(\text{Var}(h(\hat{p}\text{, }\hat{\mu})) \approx \mu^2 \text{Var}(\hat{p}) + p^2 \text{Var}(\hat{\mu}) + 2p\mu \text{Cov}(\hat{p}\text{, }\hat{\mu})\)</span>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
