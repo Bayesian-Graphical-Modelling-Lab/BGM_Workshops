@@ -101,7 +101,7 @@ We used the easybgm R package (Huth et al., 2024) to estimate the the model and 
 
 ## Prior Sensitivity Analysis
 
-If time permits, re-run the analysis using the Beta-bernoulli or Bernoulllu structure priors. How do the results compare to those obtained using the SBM prior?
+If time permits, re-run the analysis using a Beta-Bernoulli or Bernoullli structure priors. How do the results compare to those obtained using the SBM prior?
 
 # References
 
