@@ -1,0 +1,82 @@
+---
+title: "Group Assignment 3: A Bayesian Subgroup Comparison of the French Short Boredom Proneness Scale"
+format: pdf
+author: "Nikola Sekulovski & Maarten Marsman"
+editor: visual
+---
+  
+# Information about the assignment [not finished]
+  
+  In this group assignment, you will **reanalyze an existing dataset** using the Bayesian graphical modeling methodology for group comparisons that you just learned. You are provided with a short study description and a **specified Methods section**. Your task is to:
+  
+-   Complete the definition of the inclusion Bayes factor in the Methods section
+-   Implement the analysis exactly as implied by the Methods section
+-   Write a very brief **Results section** where the results are summarized.
+
+You will work with the **French subsample (N = 490)** from the original study, using **18 ordinal items** from the **Short Boredom Proneness Scale (SBPS)** and the **Curiosity and Exploration Inventory–II (CEI-II)**.
+
+\newpage
+
+# Introduction
+
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subcales of the Curiosity and Exploration Inventoruy (CEI-II), using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
+However, the authors did not investigate whether the estimated network structure differs between female and male participants.
+
+The aim of the present study is to reanalyze the French subsample of the original dataset using Bayesian graphical modeling with the specific focus on testing whether the network structure differs between female and male participants.
+
+# Method
+
+## Data
+
+The data consists of responses from N = 490 French-speaking participants ($M_{age} = 33.8$; 73% females and 27% males). The network includes 18 items, all measured on a 7-point Likert scale:
+  
+-   8 items from the Short Boredom Proneness Scale (SBPS)
+-   10 items from the Curiosity and Exploration Inventory–II (CEI-II)
+
+Missing data was handled by listwise deletion.
+
+## Model Specification
+
+To model the differences the differences in the network structure we used ..... (Marsman et al., in press).
+
+## Prior Distributions
+
+### Structure Priors
+
+For the inclusion of edge differences we assigned independent Bernoulli priors with a default inclusion probability of 0.5.
+
+### Parameter Priors
+
+The difference parameters were assigned independent Cauchy priors with a scale of 2.5.
+
+## Inference
+
+## Inference (this is adjusted text for the mornign group assignment)
+
+Evidence for the presence or absence of differences was quantified using the inclusion Bays factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edges as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
+
+\_\_\_\_\_\_ plots were used to visualize which edges fall into each of these categories. In this study, an inclusion Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for inclusion, and a Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
+
+Posterior summaries of edge parameter estimates for the differences were obtained from the model-averaged posterior distribution from which posterior mean and HDI intervals were calculated. Centrality measures were not estimated or interpreted.
+
+
+## Software
+
+We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results.
+
+# Results
+
+## Evidence
+
+This section should describe the results of the Bayes factor analysis at the edge level. Report the edge evidence plot. Particular attention should be paid to patterns of associations within and between the SBPS and CEI-II items. Edge evidence plots or summary tables should be referenced here.
+
+## Parameter Estimates
+
+
+# References
+
+-   Huth, K., Keetelaar, S., Sekulovski, N., van den Bergh, D., & Marsman, M. (2024). Simplifying Bayesian analysis of graphical models for the social sciences with easybgm: A user-friendly R-package. *advances.in/psychology, e66366* doi: 10.56296/aip00010
+
+-   Martarelli, C. S., Baillifard, A., & Audrin, C. (2022). A trait-based network perspective on the validation of the french short boredom proneness scale. *European Journal of Psychological Assessment, 39,* 390–399 doi: 10.1027/1015-5759/a000718346
+
+- Marsman M, Waldorp LJ, Sekulovski N, Haslbeck JMB (in press). “Bayes factor tests for group differences in ordinal and binary graphical models.” *Psychometrika.* doi: 10.1017/psy.2025.10060
