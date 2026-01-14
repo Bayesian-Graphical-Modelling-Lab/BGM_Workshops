@@ -44,7 +44,7 @@ sum(is.na(data_filtered))
 
 # Introduction
 
-Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subcales of the Curiosity and Exploration Inventoruy (CEI-II), using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subscales of the Curiosity and Exploration Inventory (CEI-II), using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
 
 Recent work has increasingly adopted a network perspective, in which psychological constructs are modeled as systems of interacting components rather than as manifestations of latent variables. Within this framework, network models offer a flexible way to examine conditional associations between individual questionnaire items while controlling for all other variables in the system.
 
@@ -101,7 +101,7 @@ This section should describe the results of the Bayes factor analysis at the edg
 
 ## Edge Parameter Estimates
 
-This section should summarize the estimated edge parameters. Describe the estimated network strucrure. Provide uncertainty estimates.
+This section should summarize the estimated edge parameters. Describe the estimated network structure. Provide uncertainty estimates.
 
 ## Prior Sensitivity Analysis
 
