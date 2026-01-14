@@ -108,7 +108,7 @@ This section should summarize the estimated edge parameters. Describe the estima
 
 ## Prior Sensitivity Analysis
 
-This section should compare the primary analysis to the analysis with the alternative prior specifciation, 
+This section should compare the primary analysis to the analysis with the alternative prior specification. 
 
 # References
 
