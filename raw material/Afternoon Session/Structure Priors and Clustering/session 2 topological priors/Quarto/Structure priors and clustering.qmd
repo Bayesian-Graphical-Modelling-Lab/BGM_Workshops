@@ -29,14 +29,14 @@ knitr::opts_chunk$set(echo = TRUE)
 - add the plots 
 - add the code examples
 - add more text on why clustering is important
-- render the html
+- render the html 
 
 # Recap
 
 - We learned how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence*.
 - Using Bayes factors, we quantified the strength of evidence for individual edges.  
 - We practiced estimating networks, interpreting uncertainty, and running prior-sensitivity checks.
-- We briefly touched upon the structure priors. 
+- We briefly touched upon the structure priors.
 
 
 ## Goals for this session
@@ -45,11 +45,12 @@ At the end of this session, you should be able to:
 
 ::: {.goals}
 
-- **Describe** how different structure priors (Bernoulli, Beta–Bernoulli, Stoschastic Block Model) encode assumptions about the network structure.
+- **Describe** how the different structure priors (Bernoulli, Beta–Bernoulli, Stochastic Block Model) encode assumptions about network structure.
 - **Explain** the difference between the three priors
 - **Estimate** networks under each prior, test for clustering and estimate the cluster membership of the nodes.
-- **Interpret** results for clustering
+- **Interpret** results for clustering. 
 :::
+
 
 ::: {.note}
 **Recommended Reading:**
@@ -61,35 +62,49 @@ At the end of this session, you should be able to:
 
 - Sekulovski, N., Waaijers, M., & Arena, G., (2025). LLM-Based Prior Elicitation for Bayesian Graphical Modeling. Preprint. doi: 10.31234/osf.io/k2twq_v1
 
+**R Setup Tip:**
+Make sure to install and load the following libraries before running the examples:
+
+```r
+library(bgms)
+library(dplyr) #Used for plotting
+library(easybgm)
+library(ggplot2) #Used for plotting
+library(gridExtra) #Used for plotting
+library(patchwork) #Used for plotting
+library(pheatmap)
+library(qgraph)
+library(tidyr) #Used for plotting
+```
+::
+:::
 
 
-# Priors on the network structrure
+# Network Structure Priors
 
+Network structure priors are used to incorporate the researcher's beliefs (or uncertainty) about the underlying structure of the network before observing the data. This is one of the main distinguishing characteristics of Bayesian graphical modeling framework.
 
-Through these priors we can encode our prior knowledge (or lack thereof) about the expected structure of the network.
-This includes assumptions about:
-- **Individual edges** : do we expect certain edges to be present or absent?
-- **Density or sparsity**: do we expect many or few edges?
-- **Clustering**: do we expect nodes to group into clusters or domains?
+These priors allow us to:
 
-This is one of the distributing aspects of the BGM methodology. 
+- Control which edges are more or less likely to be included. 
+- Model the network density. 
+- Incorporate a clustering assumption as well as test for the presence of clusters in the network and estimate the cluster membership of the nodes.
 
+In this session we will explore the three structure priors in detail and showcase how to use them in practice with the `easybgm` R package.
 
 # 1. The Bernoulli Prior
 
-In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ and equal for all edges. This is equivalent to saying that we expect about half of the relations to be present in the network. This is the prior which you already saw during the lecture in the morning session. 
+This is the prior which you already saw during the morning session. In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ and equal for all edges. This is equivalent to saying that we expect about half of the relations to be present in the network.
 
 [figure]. 
 
-What do you notice in this figure? Which network structures are most likely under this prior?
+What do you notice in this figure? Which network structures are most likely?
 
-Alternatively, based on substantive or theoretical reasons, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge. This will make the corresponding network structures where the associated edge is present more or less likely, depending on the value of π.
+Alternatively, based on substantive or thoretical reaspons, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incporporate such assumptions by setting a seperate inclusion probability π for each edge.  This will make the corresponding network structures where the associated edge is present more or less likely, depending on the value of π.
 
 ## 1.2 Workflow in easybgm 
 
-[example code: How to do it in R, with the default example and also with how to do it seperately for each edge (note for BBDgraph is different than for bgms, I think)]
-
-This prior can be implemented bot hfrom ordinal/binary data, as well as for GGMs and mixed models (through GCGMs)
+[example code: How to do it in R, with the default example and also with how to do it seperately for each edge (note for BBDgraph is different than for bgms, I thinl)]
 
 
 # 2. The Beta–Bernoulli Prior
@@ -100,15 +115,6 @@ t case ,m] bithoth shape paparameters of the Beta distribution are set to 1, res
 [figure]
 
 What do you notice in the figure? How does this compae to the Bernoulli prior? 
-
-
-Further options can be achieved by tweaking the hyperparamrters of the beta distribution to encode prior assumptions that the network structure is sparse or dense.
-
-[plot of the beta distribution]
-
-
-
-[mention the expected valyes, and also think abouy]
 
 ## 2.2 Workflow in easybgm
 

@@ -15,36 +15,11 @@ In this group assignment, you will **reanalyze an existing dataset** using the B
 
 You will work with the **French subsample (N = 490)** from the original study, using **18 ordinal items** from the **Short Boredom Proneness Scale (SBPS)** and the **Curiosity and Exploration Inventory–II (CEI-II)**.
 
-```{r}
-#| eval: false
-#| warning: false
-#| include: false
-data <- read_csv("N0271_1_raw data.csv")
-data_filtered <- data %>%
-   filter(sample == "fr") %>%
-    select(starts_with("A"), starts_with("G"), starts_with("S"), starts_with("C")) %>%
-    select(-SBPS_IMC_6, -CEIII_IMC7, -sample)
-
-saveRDS(data_filtered, "data_group_assignment.rds")
-
-
-
-# rename the second variable to Gender
-colnames(data_filtered)[2] <- "Gender"
-
-data_filtered$Gender <- as.factor(data_filtered$Gender)
-
-summary(data_filtered)
-
-# check if there is NAs in the data
-sum(is.na(data_filtered))
-```
-
 \newpage
 
 # Introduction
 
-Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subscales of the Curiosity and Exploration Inventory (CEI-II), using a regularized frequentist network approach. The authors expected to find three clusters corresponding to boredom, curiosity and exploration. However, using a post-hoc community detection approach their analysis revealed two clusters: one comprising all SBPS items and another comprising all CEI-II items.
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subscales of the Curiosity and Exploration Inventory (CEI-II), using a regularized frequentist network approach. The authors expected to find three clusters corresponding to boredom, curiosity and exploration. However, using a post-hoc community detection approach, their analysis revealed two clusters: one comprising all SBPS items and another comprising all CEI-II items.
 
 Recent work has increasingly adopted a network perspective, in which psychological constructs are modeled as systems of interacting components rather than as manifestations of latent variables. Within this framework, network the nodes are expected to cluster together according to the domains they belong to.
 
@@ -91,9 +66,19 @@ For the estimated cluster membership of the nodes, we report both the posterior 
 
 ## Software
 
-We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results.
+We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results. We ran the model using an adaptive Metropolis–Hastings algorithm, with all other sampling settings left at their default values.
 
 # Results
+
+```{r}
+#| eval: false
+#| warning: false
+#| include: false
+fit <- easybgm(data[, -c(1,2)], type = "ordinal", edge_prior = "Stochastic-Block", update_method = "adaptive-metropolis", beta_bernoulli_alpha = 2, beta_bernoulli_beta = 1, beta_bernoulli_alpha_between = 1, beta_bernoulli_beta_between = 2, lambda = 1.59)
+
+summary(fit)
+clusterBayesfactor(fit, type = "point", b1 = 2, b2 = 3)
+```
 
 ## Cluster Bayes factor tests
 

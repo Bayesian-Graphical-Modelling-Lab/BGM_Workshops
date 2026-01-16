@@ -25,7 +25,7 @@ data_filtered <- data %>%
     select(starts_with("A"), starts_with("G"), starts_with("S"), starts_with("C")) %>%
     select(-SBPS_IMC_6, -CEIII_IMC7, -sample)
 
-saveRDS(data_filtered, "data_group_assignment.rds")
+saveRDS(data_filtered, "data.rds")
 
 
 
@@ -87,7 +87,7 @@ Posterior summaries of edge parameters were obtained from the model-averaged pos
 
 ## Software
 
-We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results.
+We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results. We ran the model using an adaptive Metropolis–Hastings algorithm, with all other sampling settings left at their default values.
 
 # Results
 

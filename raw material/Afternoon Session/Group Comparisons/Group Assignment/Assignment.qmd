@@ -60,9 +60,23 @@ Posterior summaries of edge parameter estimates for the differences were obtaine
 
 ## Software
 
-We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results.
+We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results. We ran the model using an adaptive Metropolis–Hastings algorithm, with all other sampling settings left at their default values.
 
 # Results
+
+```{r}
+#| eval: false
+#| warning: false
+#| include: false
+
+data_female <- data[data$Gender == "fem", -c(1,2)]
+
+data_male <- data[data$Gender == "male", -c(1,2)]
+
+data_list <- list(data_female, data_male)
+
+fit <- easybgm_compare(data_list, type = "ordinal", update_method = "adaptive-metropolis")
+```
 
 ## Evidence for Edge Differences
 
