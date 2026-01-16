@@ -24,11 +24,10 @@ engine: knitr
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# TODO:
+# TODO (work in progress):
 
-- add the plots 
-- add the code examples
-- add more text on why clustering is important
+- finish the clustering section 
+- add some information on the prior odds under each prior
 - render the html 
 
 # Recap
@@ -51,7 +50,6 @@ At the end of this session, you should be able to:
 - **Interpret** results for clustering. 
 :::
 
-
 ::: {.note}
 **Recommended Reading:**
 
@@ -64,19 +62,6 @@ At the end of this session, you should be able to:
 
 **R Setup Tip:**
 Make sure to install and load the following libraries before running the examples:
-
-```r
-library(bgms)
-library(dplyr) #Used for plotting
-library(easybgm)
-library(ggplot2) #Used for plotting
-library(gridExtra) #Used for plotting
-library(patchwork) #Used for plotting
-library(pheatmap)
-library(qgraph)
-library(tidyr) #Used for plotting
-```
-::
 :::
 
 # Network Structure Priors
@@ -95,17 +80,88 @@ In this session we will explore the three structure priors in detail and showcas
 
 In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ and equal for all edges. This is the prior that was implicitly assumed during this mornings lecture. 
 
-[figure]. 
-
-What do you notice in this figure? Which network structures are most likely?
-
 Alternatively, based on substantive or theoretical considerations, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge.  This will make the corresponding network structures where the associated edge is present more or less likely, depending on the value of π for that specific edge. 
+
+To visualize the implications of these priors, we will compare them side by side:
+
+- Left panel: prior probability assigned to **individual network structures**.  
+- Right panel: prior probability distribution over **network complexity**.
+
+This comparison highlights that the Beta–Bernoulli prior models not only edge probability, but also the entire distribution of network complexity.
+
+```{r, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+# Prior over complexity
+pmf_binom <- function(m, pi) {
+  k <- 0:m
+  prob <- dbinom(k, size = m, prob = pi)
+  data.frame(k, prob)
+}
+
+pmf_betabinom <- function(m, a, b) {
+  k <- 0:m
+  prob <- exp(lchoose(m, k) + lbeta(k + a, m - k + b) - lbeta(a, b))
+  data.frame(k, prob)
+}
+
+plot_prior <- function(p = 6, model = "bernoulli", pi = 0.5, a = 1, b = 1) {
+  m <- p * (p - 1) / 2
+  k <- 0:m
+  
+  if (model == "bernoulli") {
+    prob_k <- dbinom(k, size = m, prob = pi)
+    label <- paste0("Bernoulli(π=", pi, ")")
+  } else {
+    prob_k <- exp(lchoose(m, k) + lbeta(k + a, m - k + b) - lbeta(a, b))
+    label <- paste0("Beta–Bernoulli(", a, ",", b, ")")
+  }
+  
+  # Left: probability per structure = prob_k / choose(m,k)
+  df_struct <- data.frame(k, prob = prob_k / choose(m, k))
+  
+  g1 <- ggplot(df_struct, aes(x = k, y = prob)) +
+    geom_line() +
+    labs(x = "Number of edges (k)", y = "Prior prob per graph",
+         title = "Prior over individual structures") +
+    theme_minimal(base_size = 12)
+  
+  # Right: probability over complexity = prob_k
+  df_complexity <- data.frame(k, prob = prob_k)
+  
+  g2 <- ggplot(df_complexity, aes(x = k, y = prob)) +
+    geom_line() +
+    labs(x = "Number of edges (k)", y = "Prior prob",
+         title = "Prior over network complexity") +
+    theme_minimal(base_size = 12)
+  
+  grid.arrange(g1, g2, ncol = 2, top = label)
+}
+```
+
+```{r}
+# Example: Bernoulli(0.5)
+plot_prior(p = 6, model = "bernoulli", pi = 0.5)
+plot_prior(p = 6, model = "bernoulli", pi = 0.8)
+```
+
+::: {.callout-note title="Interpretation: Bernoulli(0.5)"}
+- **Structures (left):** every graph on $p$ nodes has the same prior probability.  
+- **Complexity (right):** the distribution is binomial. Most prior mass lies around 50% density, because there are many more graphs of medium density.  
+
+**Implications:**  
+- Edges are independent and equally likely.  
+- Expected density is fixed at $\pi$, regardless of network size. But how should one choose $\pi$?  
+- For example, under $\pi = 0.5$, sparse and dense networks receive very little prior probability.
+:::
+
+### Prior odds for the inclusion Bayes factor
+
 
 ## 1.2 Workflow in easybgm 
 
-This prior is available both fdor estimating networks based on ordinal/binary data as well as for estimating GGMs and models for mixed data
-
-### The uniform Bernoulli prior
+This prior is available both for estimating networks based on ordinal/binary data as well as for estimating GGMs and models for mixed data types.
 
 For binary and ordinal data, the Bernoulli prior is specified by setting `edge_prior = "Bernoulli"` in the `easybgm()` function. By default, the inclusion probability π is set to $0.5$ for all edges, using the `inclusion_prob` argument. Here is an example:
 
@@ -114,7 +170,7 @@ library(bgms)
 library(easybgm)
 
 fit <- easybgm(
-  data = Wenchuan[, c(1:5)],
+  data = ADHD[, c(1:5)],
   type = "ordinal", # 
   update_method = "adaptive-metropolis",  # use metropolis for speed
   edge_prior = "Bernoulli",  # specify the prior 
@@ -135,7 +191,7 @@ inclusion_matrix[1, 2] <- 0.8  # Higher probability forinclusion between nodes 1
 inclusion_matrix[2, 1] <- 0.8  # Symmetric matrix
 # Fit the model with custom inclusion probabilities
 fit_custom <- easybgm(
-  data = Wenchuan[, c(1:5)],
+  data = ADHD[, c(1:5)],
   type = "ordinal",
   update_method = "adaptive-metropolis",
   edge_prior = "Bernoulli",
@@ -150,7 +206,7 @@ library(bgms)
 library(easybgm)
 
 fit <- easybgm(
-  data = Wenchuan[, c(1:5)],
+  data = ADHD[, c(1:5)],
   type = "continuous", # or mixed  
   inclusion_prob = 0.5    # set inclusion probability (default is 0.5)
 )
@@ -159,19 +215,59 @@ fit <- easybgm(
 We can set different inclusion probabilities for different edges by providing a matrix of inclusion probabilities to the `inclusion_prob` argument, similar to the previous example.
 
 
-
 # 2. The Beta–Bernoulli Prior
 
 The second prior is the **Beta–Bernoulli prior**. This prior generalizes the Bernoulli prior by treating the global inclusion probability π as a random variable drawn from a Beta(α, β) distribution. This extra layer of uncertainty allows the Beta–Bernoulli prior to model a wider range of network densities. By adjusting the parameters α and β, we can encode beliefs about whether the network is likely to be sparse, dense, or somewhere in between. Note that this prior assumes that the prior inclusion probability π is constant across the edges. 
 t case ,m] bithoth shape paparameters of the Beta distribution are set to 1, resulting in a uniform distribution over π. This means that all network densities are equally likely a priori.
 
-[figure]
+:::
 
-What do you notice in the figure? How does this compae to the Bernoulli prior? 
+
+```{r}
+# Example: Beta–Bernoulli(5,5)
+plot_prior(p = 6, model = "beta", a = 1, b = 1)
+plot_prior(p = 6, model = "beta", a = 2, b = 5)
+```
+
+
+::: {.callout-note title="Interpretation: Beta–Bernoulli(2,5)"}
+- **Structures (left):** graphs with fewer edges per structure receive higher prior probability.  
+- **Complexity (right):** the distribution places more weight on lower values of $K$, i.e., sparser networks.  
+
+**Implications:**  
+- This prior encodes a belief that networks are more likely to be sparse ($E[\pi] \approx 0.29$).  
+- The parameters $\alpha$ and $\beta$ determine how strongly sparsity or density is favored.  
+:::
+
+### Prior odds for the inclusion Bayes factor
 
 ## 2.2 Workflow in easybgm
 
-[Code, this can only be done with the OMRF]
+This prior is only available both for  networks based on ordinal/binary data (i.e., using the ordinal Markov random field). The prior is specified by setting `edge_prior = "Beta-Bernoulli"` in the `easybgm()` function. By default, the parameters $\alpha$ and $\beta$ are set to $1$, representing a uniform prior over inclusion probabilities. Here is an example:
+
+```r
+library(bgms)
+library(easybgm)
+
+fit <- easybgm(
+  data = ADHD[, c(1:5)],
+  type = "ordinal", 
+  update_method = "adaptive-metropolis",
+  edge_prior = "Beta-Bernoulli", 
+  beta_bernoulli_alpha = 1,
+  beta_bernoulli_beta = 1   
+)
+```
+As a guide on deciding how to set the $\alpha$ and $\beta$ perparameters, you can use [this](https://amshenao.shinyapps.io/FINAL/) Shiny app which can help you to visualize the distribution. The app also provides the measures of central tendency and dispersion of the distribution, given the specified parameters.
+
+## Recap: Priors on network sparsity and multiplicity
+
+This sets the stage for the next step.  
+So far we have focused on **sparsity versus density**; whether networks are expected to be mostly empty, mostly full, or something in between.  
+But in psychological applications we often expect **structure beyond sparsity**: symptoms cluster into domains, and some symptoms act as bridges between clusters.  
+
+To capture such patterns, we need priors that go beyond edge probability and network complexity.  
+We now turn to the **Stochastic Block Model**, which allows us to encode clustering directly into the prior.
 
 # 3. The Stochastic-Block Model
 
@@ -180,9 +276,19 @@ So far, we have focused on modeling **sparsity and density** using network prior
 - The **Beta–Bernoulli prior** treats π as random, distributing prior mass across different levels of network complexity.  
 
 **Limitation:** Neither prior encodes *organization* among nodes.  
+
+## 3.1 Clustering in Psychological networks
+
 Yet in psychological research, we often expect such organization:  
 - Symptoms may cluster into **domains** (e.g., ADHD or Autism).  
 - Some symptoms may connect domains, suggesting potential **bridges**.  
+
+
+If these were symptom networks, how would you interpret edges within and between clusters?  
+  How might these patterns relate to theoretical expectations about domains or bridging symptoms?
+[expand on this]
+
+## 3.2 The Stochastic Block Model as Network Prior
 
 The **Stochastic Block Model (SBM)** addresses this by placing a prior directly on **clustering structure**:  
 - Nodes are assigned to latent blocks (clusters), which are learned from the data.
@@ -192,13 +298,6 @@ The **Stochastic Block Model (SBM)** prior assumes that nodes are organized into
 Edges are more likely within the same block and less likely between blocks.  
 Let’s build some intuition for what this structure implies.
 
-### Why do we need such a model?
-
-If these were symptom networks, how would you interpret edges within and between clusters?  
-  How might these patterns relate to theoretical expectations about domains or bridging symptoms?
-[expand on this]
-
-## 3.2 The Stochastic Block Model as Network Prior
 
 ### The generative model
 
