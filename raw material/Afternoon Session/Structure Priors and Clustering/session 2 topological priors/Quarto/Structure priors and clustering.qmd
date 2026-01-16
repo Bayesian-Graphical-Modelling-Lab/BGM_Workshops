@@ -79,7 +79,6 @@ library(tidyr) #Used for plotting
 ::
 :::
 
-
 # Network Structure Priors
 
 Network structure priors are used to incorporate the researcher's beliefs (or uncertainty) about the underlying structure of the network before observing the data. This is one of the main distinguishing characteristics of Bayesian graphical modeling framework.
@@ -94,17 +93,71 @@ In this session we will explore the three structure priors in detail and showcas
 
 # 1. The Bernoulli Prior
 
-This is the prior which you already saw during the morning session. In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ and equal for all edges. This is equivalent to saying that we expect about half of the relations to be present in the network.
+In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ and equal for all edges. This is the prior that was implicitly assumed during this mornings lecture. 
 
 [figure]. 
 
 What do you notice in this figure? Which network structures are most likely?
 
-Alternatively, based on substantive or thoretical reaspons, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incporporate such assumptions by setting a seperate inclusion probability π for each edge.  This will make the corresponding network structures where the associated edge is present more or less likely, depending on the value of π.
+Alternatively, based on substantive or theoretical considerations, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge.  This will make the corresponding network structures where the associated edge is present more or less likely, depending on the value of π for that specific edge. 
 
 ## 1.2 Workflow in easybgm 
 
-[example code: How to do it in R, with the default example and also with how to do it seperately for each edge (note for BBDgraph is different than for bgms, I thinl)]
+This prior is available both fdor estimating networks based on ordinal/binary data as well as for estimating GGMs and models for mixed data
+
+### The uniform Bernoulli prior
+
+For binary and ordinal data, the Bernoulli prior is specified by setting `edge_prior = "Bernoulli"` in the `easybgm()` function. By default, the inclusion probability π is set to $0.5$ for all edges, using the `inclusion_prob` argument. Here is an example:
+
+```r
+library(bgms)
+library(easybgm)
+
+fit <- easybgm(
+  data = Wenchuan[, c(1:5)],
+  type = "ordinal", # 
+  update_method = "adaptive-metropolis",  # use metropolis for speed
+  edge_prior = "Bernoulli",  # specify the prior 
+  inclusion_prob = 0.5    # set inclusion probability (default is 0.5)
+)
+```
+If we wish to set different inclusion probabilities for different edges, we can do so by providing a matrix of inclusion probabilities to the `inclusion_prob` argument. Here is an example:
+
+```r
+library(bgms)
+
+library(easybgm)
+# Create a custom inclusion probability matrix
+inclusion_matrix <- matrix(0.5, nrow = 5, ncol =
+ 5)
+diag(inclusion_matrix) <- 0  # No self-loops
+inclusion_matrix[1, 2] <- 0.8  # Higher probability forinclusion between nodes 1 and 2
+inclusion_matrix[2, 1] <- 0.8  # Symmetric matrix
+# Fit the model with custom inclusion probabilities
+fit_custom <- easybgm(
+  data = Wenchuan[, c(1:5)],
+  type = "ordinal",
+  update_method = "adaptive-metropolis",
+  edge_prior = "Bernoulli",
+  inclusion_prob = inclusion_matrix
+)
+```
+
+For GGMs and mixed data, the Bernoulli prior is the only choice and is automatically set. By default, the inclusion probability π is set to $0.5$ for all edges, using the `inclusion_prob` argument. Here is an example:
+
+```r
+library(bgms)
+library(easybgm)
+
+fit <- easybgm(
+  data = Wenchuan[, c(1:5)],
+  type = "continuous", # or mixed  
+  inclusion_prob = 0.5    # set inclusion probability (default is 0.5)
+)
+```
+
+We can set different inclusion probabilities for different edges by providing a matrix of inclusion probabilities to the `inclusion_prob` argument, similar to the previous example.
+
 
 
 # 2. The Beta–Bernoulli Prior
