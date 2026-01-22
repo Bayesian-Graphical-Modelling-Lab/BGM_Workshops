@@ -41,7 +41,7 @@ By the end of this session, you will be able to:
 
 ::: goals
 -   **Describe** how the different priors (Bernoulli, Beta–Bernoulli, Stochastic Block Model) encode assumptions about the network structure.
--   **Explain** the difference between the three priors
+-   **Explain** the difference between the three priors.
 -   **Estimate** networks under each prior, test for clustering and estimate the cluster membership of the nodes.
 :::
 
@@ -78,7 +78,7 @@ In this session we will explore the three structure priors in detail and showcas
 In its simplest form, this prior sets a Bernoulli(π) distribution, where the inclusion probability π is fixed to $0.5$ for all edges.
 This is the prior that was implicitly assumed during the morning lecture.
 
-Let's visualize the implications of this prior for a small network with $p = 6$ nodes (i.e., $k = 15$ possible edges and $2^k$ possible network structures).
+Let's visualize the implications of this prior for a small network with $p = 6$ nodes (i.e., $m = 15$ possible edges and $2^m$ possible network structures).
 
 -   Left panel: prior probability assigned to **individual network structures**.
 -   Right panel: prior probability distribution over **network density**.
@@ -158,14 +158,6 @@ But how should one choose $\pi$?\
 Alternatively, based on substantive or theoretical considerations, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge.
 
 
-### Prior odds for the inclusion Bayes factor 
-
-As we saw in the morning lecture, the prior odds for edge inclusion under this prior are simply:
-
-$$
-\text{Prior Odds} = \frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\pi}{1 - \pi}
-$$
-
 ## 1.2 Workflow in easybgm
 
 This prior is available both for estimating networks based on ordinal/binary data as well as for estimating GGMs and models for mixed data types.
@@ -192,7 +184,6 @@ Here is an example:
 
 ``` r
 library(bgms)
-
 library(easybgm)
 # Create a custom inclusion probability matrix
 inclusion_matrix <- matrix(0.5, nrow = 5, ncol =
@@ -271,13 +262,6 @@ plot_prior(p = 6, model = "beta", a = 2, b = 5)
 :::
 
 
-### Prior odds for the inclusion Bayes factor
-
-Under the Beta–Bernoulli prior, the prior odds for edge inclusion are given by (when they do not depend on $k$) are:
-
-$$
-\text{Prior Odds} = \frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\alpha}{\beta}
-$$
 
 ## 2.2 Workflow in easybgm
 
@@ -381,28 +365,26 @@ The central goal of SBM analysis is to evaluate evidence for clustering and to e
 In practice, this is done through **clustering Bayes factors**.
 You can also find a tutorial that explains how to perform a clustering analysis using both `easybgm` and `bgms` packages [here](https://www.nikolasekulovski.com/blog/post2/).
 
-In this example, we will be using a simulated data set with 12 variables, where we know that the true number of clusters is 2, in order to illustrate the workflow and how the method can capture the clustering structure. We will leave all the default hyperparameter settings, except for λ, which we will set to 1. This setting reflects our prior belief that there is likely to be one cluster, and we will leave the hyperparameters for the Beta distribution to 1. 
+In this example, we will be using a simulated data set with 12 ordinal variables, where we know that the true number of clusters is 2. We will leave all the default prior parameter settings (i.e., we will set lambda = 1, all shape parameters of the Beta distributions to 1, and the Dirichlet alpha also to 1.).
 
 Here is the workflow:
 
 ```{r}
 #| cache: true
-#| warning: false
-#| message: false
-#| eval: true
 library(easybgm)
 library(bgms)
+data <- readRDS("data_sbm.rds")
 fit_sbm <- easybgm(
-  data = Wenchuan[, c(1:5)],
+  data = data,
   type = "ordinal", # or "binary"
-  update_method = "adaptive-metropolis",  # use metropolis for speed
-  edge_prior = "Stochastic-Block",        # stochastic block model prior
+  update_method = "adaptive-metropolis", # use metropolis for speed
+  edge_prior = "Stochastic-Block",       # stochastic block model prior
   lambda = 1,                            # expected 1 clusters
-  beta_bernoulli_alpha = 1,               # α, β for the within block probability
+  beta_bernoulli_alpha = 1,              # α, β for the within block probability
   beta_bernoulli_beta = 1,
-  beta_bernoulli_alpha_between = 1,       # α, β for the between block probability
+  beta_bernoulli_alpha_between = 1,      # α, β for the between block probability
   beta_bernoulli_beta_between = 1,
-  dirichlet_alpha = 1,                     # usually fixed,
+  dirichlet_alpha = 1,                    
   seed = 1234,
   progress = FALSE
 )
@@ -415,7 +397,7 @@ summary(fit_sbm)
 ```{r}
 # Clustering Bayes Factor for point hypotheses
 library(easybgm)
-clusterBayesfactor(fit_sbm, b1= 1, b2 = 2)
+clusterBayesfactor(fit_sbm, type = "point", b1 = 2, b2 = 1)
 ```
 
 
@@ -424,7 +406,7 @@ library(pheatmap)
 pheatmap(fit_sbm$sbm$posterior_mean_coclustering_matrix, 
          cluster_rows = FALSE, 
          cluster_cols = FALSE,
-         color = colorRampPalette(c("blue", "yellow"))(100))
+         color = colorRampPalette(c("#B8860B", "#009E73"))(100))
 ```
 
 
