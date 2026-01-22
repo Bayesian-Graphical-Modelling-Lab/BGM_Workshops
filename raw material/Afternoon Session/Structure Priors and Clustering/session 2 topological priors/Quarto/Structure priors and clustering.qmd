@@ -31,9 +31,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 In the morning session, we covered the fundamentals of Bayesian graphical modeling.
 
-- We learned how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence* using the inclusion Bayes factor.
-- We practiced estimating networks, interpreting the structure-averaged parameter estimates and their uncertainty.
-- We briefly touched upon the priors on the network structure.
+-   We learned how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence* using the inclusion Bayes factor.
+-   We practiced estimating networks, interpreting the structure-averaged parameter estimates and their uncertainty.
+-   We briefly touched upon the priors on the network structure.
 
 ## Goals for this session
 
@@ -69,7 +69,7 @@ These priors allow us to:
 -   Control which edges are more or less likely to be included.
 -   Model the network density.
 -   Incorporate the assumption of clustering
-  -   Test for the presence of clusters in the network and estimate the cluster membership of the nodes.
+-   Test for the presence of clusters in the network and estimate the cluster membership of the nodes.
 
 In this session we will explore the three structure priors in detail and showcase how to use them in practice with the `easybgm` package.
 
@@ -145,18 +145,15 @@ plot_prior(p = 6, model = "bernoulli", pi = 0.5)
 
 **Implications:**
 
-- Edges are independent and equally likely.
-- Expected density is fixed at $\pi$, regardless of network size.
-But how should one choose $\pi$?\
-- For example, under $\pi = 0.5$, extremely sparse and dense networks receive very little prior probability.
+-   Edges are independent and equally likely.
+-   Expected density is fixed at $\pi$, regardless of network size. But how should one choose $\pi$?\
+-   For example, under $\pi = 0.5$, extremely sparse and dense networks receive very little prior probability.
 :::
-
 
 ![](figures/structure_B.png){width="80%"}
 
-
-Alternatively, based on substantive or theoretical considerations, we might believe that some edges are more likely than others. The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge.
-
+Alternatively, based on substantive or theoretical considerations, we might believe that some edges are more likely than others.
+The Bernoulli structure prior allows us to incorporate such assumptions by setting a separate inclusion probability π for each edge.
 
 ## 1.2 Workflow in easybgm
 
@@ -228,20 +225,19 @@ Note that this prior assumes that the prior inclusion probability π, is constan
 In the default case, both shape parameters of the Beta distribution are set to 1, resulting in a uniform distribution over π.
 This means that all network densities are equally likely a priori.
 
-
 ```{r}
 # Example: Beta–Bernoulli(5,5)
 plot_prior(p = 6, model = "beta", a = 1, b = 1)
 ```
 
 ::: {.callout-note title="Interpretation: Beta–Bernoulli(1,1)"}
-- **Structures (left):** sparse and dense graphs have higher per-graph probability than mid-density graphs.  
-- **Density (right):** the distribution is uniform; each possible number of edges $k$ is equally likely.  
+-   **Structures (left):** sparse and dense graphs have higher per-graph probability than mid-density graphs.\
+-   **Density (right):** the distribution is uniform; each possible number of edges $k$ is equally likely.
 
-**Implications:**  
-- Prior mass is spread evenly across all possible network densities.  
-- Sparse, dense, and intermediate graphs are all equally plausible.  
-- No need to choose a single fixed value of $\pi$; the model considers a wide range of possible densities.  
+**Implications:**\
+- Prior mass is spread evenly across all possible network densities.\
+- Sparse, dense, and intermediate graphs are all equally plausible.\
+- No need to choose a single fixed value of $\pi$; the model considers a wide range of possible densities.
 :::
 
 ![](figures/structure_BB.png){width="80%"}
@@ -251,17 +247,14 @@ plot_prior(p = 6, model = "beta", a = 1, b = 1)
 plot_prior(p = 6, model = "beta", a = 2, b = 5)
 ```
 
-
 ::: {.callout-note title="Interpretation: Beta–Bernoulli(2,5)"}
-- **Structures (left):** graphs with fewer edges per structure receive higher prior probability.  
-- *Density (right):** the distribution places more weight on lower values of $k$, i.e., sparser networks.  
+-   **Structures (left):** graphs with fewer edges per structure receive higher prior probability.\
+-   \*Density (right):\*\* the distribution places more weight on lower values of $k$, i.e., sparser networks.
 
-**Implications:**  
-- This prior encodes a belief that networks are more likely to be sparse ($E[\pi] = \frac{\alpha}{\alpha + \beta} \approx 0.29$).  
-- The parameters $\alpha$ and $\beta$ determine how strongly sparsity or density is favored.  
+**Implications:**\
+- This prior encodes a belief that networks are more likely to be sparse ($E[\pi] = \frac{\alpha}{\alpha + \beta} \approx 0.29$).\
+- The parameters $\alpha$ and $\beta$ determine how strongly sparsity or density is favored.
 :::
-
-
 
 ## 2.2 Workflow in easybgm
 
@@ -284,8 +277,8 @@ fit <- easybgm(
 )
 ```
 
-As a guide on deciding how to set the $\alpha$ and $\beta$ parameters, you can use [this](https://amshenao.shinyapps.io/FINAL/) Shiny app, which can help you to visualize the distribution. The app also provides the measures of central tendency and dispersion of the distribution, given the specified parameters.
-
+As a guide on deciding how to set the $\alpha$ and $\beta$ parameters, you can use [this](https://amshenao.shinyapps.io/FINAL/) Shiny app, which can help you to visualize the distribution.
+The app also provides the measures of central tendency and dispersion of the distribution, given the specified parameters.
 
 # 3. The Stochastic-Block Model
 
@@ -293,18 +286,17 @@ So far, we have focused on modeling **sparsity and density** using network prior
 - The **Bernoulli prior** fixes an edge probability π.\
 - The **Beta–Bernoulli prior** treats π as random, distributing prior mass across different levels of the network density.
 
-
 **Limitation:** Neither prior encodes the *organization* among nodes.
 
 To capture such patterns, we need priors that go beyond edge probability and network density.
 
-## 3.1 Clustering in Psychological networks 
+## 3.1 Clustering in Psychological networks
 
 In many psychological network theories, we expect nodes of the network to cluster into **domains** or **communities**.
 
-- Items measuring abilities (such as intelligence) are assumed to cluster together.
-- Symptoms of psychological disorders may cluster into domains (e.g., ADHD or Autism, Depression or Anxiety).
-- Some symptoms may connect domains, suggesting potential **bridges**, which some authors have argued are important in the study of comorbidity of mental disorders (e.g., Cramer et al., 2010; Borsboom & Cramer, 2013).
+-   Items measuring abilities (such as intelligence) are assumed to cluster together.
+-   Symptoms of psychological disorders may cluster into domains (e.g., ADHD or Autism, Depression or Anxiety).
+-   Some symptoms may connect domains, suggesting potential **bridges**, which some authors have argued are important in the study of comorbidity of mental disorders (e.g., Cramer et al., 2010; Borsboom & Cramer, 2013).
 
 So far, there have only been post-hoc methods to detect such clusters in estimated networks (e.g., using Exploratory Graph Analysis).
 
@@ -316,9 +308,9 @@ We need a prior that directly encodes the clustering structure.
 
 The **Stochastic Block Model (SBM)** addresses this by placing a prior directly on **clustering structure**:
 
-- Nodes are assigned to latent blocks (clusters), which are learned from the data.
-- Then, the probability of an edge between two nodes depends on the blocks to which they belong.
-- We can set edges to be more likely within the same block and less likely between blocks.
+-   Nodes are assigned to latent blocks (clusters), which are learned from the data.
+-   Then, the probability of an edge between two nodes depends on the blocks to which they belong.
+-   We can set edges to be more likely within the same block and less likely between blocks.
 
 ### The Model
 
@@ -361,11 +353,12 @@ In other words, λ does not equal the expected number of clusters directly (as i
 
 ## 3.3 Workflow in easybgm
 
-The central goal of SBM analysis is to evaluate evidence for clustering and to estimate the cluster membership of the nodes. 
+The central goal of SBM analysis is to evaluate evidence for clustering and to estimate the cluster membership of the nodes.
 In practice, this is done through **clustering Bayes factors**.
 You can also find a tutorial that explains how to perform a clustering analysis using both `easybgm` and `bgms` packages [here](https://www.nikolasekulovski.com/blog/post2/).
 
-In this example, we will be using a simulated data set with 12 ordinal variables, where we know that the true number of clusters is 2. We will leave all the default prior parameter settings (i.e., we will set lambda = 1, all shape parameters of the Beta distributions to 1, and the Dirichlet alpha also to 1.).
+In this example, we will be using a simulated data set with 12 ordinal variables, where we know that the true number of clusters is 2.
+We will leave all the default prior parameter settings (i.e., we will set lambda = 1, all shape parameters of the Beta distributions to 1, and the Dirichlet alpha also to 1.).
 
 Here is the workflow:
 
@@ -400,7 +393,6 @@ library(easybgm)
 clusterBayesfactor(fit_sbm, type = "point", b1 = 2, b2 = 1)
 ```
 
-
 ```{r}
 library(pheatmap)
 pheatmap(fit_sbm$sbm$posterior_mean_coclustering_matrix, 
@@ -408,8 +400,6 @@ pheatmap(fit_sbm$sbm$posterior_mean_coclustering_matrix,
          cluster_cols = FALSE,
          color = colorRampPalette(c("#B8860B", "#009E73"))(100))
 ```
-
-
 
 # Bonus: Using LLMs for Prior Specification
 
@@ -468,15 +458,11 @@ Upload your variable list, specify context, and obtain priors ready to use in `e
 This makes it a proof-of-concept tool for now, but it illustrates how priors can be informed not only by hand-tuning, but also by **AI-assisted elicitation**.
 :::
 
-# Recap 
+# Recap
 
 **In this session, we have:**\
--   Explored three priors on network structure: **Bernoulli**, **Beta–Bernoulli**, and **Stochastic Block Model (SBM)**.\
--   Discussed how each prior encodes different assumptions about edge inclusion, network density, and 
-   clustering.\
--   Practiced estimating networks under each prior using the `easybgm` package.\
--   Learned how to test for clustering and estimate cluster membership with the SBM prior.
--  Now you are equipped to choose and implement structure priors that align with your research questions and theoretical expectations in Bayesian graphical modeling!
-
-
-
+- Explored three priors on network structure: **Bernoulli**, **Beta–Bernoulli**, and **Stochastic Block Model (SBM)**.\
+- Discussed how each prior encodes different assumptions about edge inclusion, network density, and clustering.\
+- Practiced estimating networks under each prior using the `easybgm` package.\
+- Learned how to test for clustering and estimate cluster membership with the SBM prior.
+- Now you are equipped to choose and implement structure priors that align with your research questions and theoretical expectations in Bayesian graphical modeling!
