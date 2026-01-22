@@ -381,11 +381,11 @@ fit_sbm <- easybgm(
   seed = 1234,
   progress = FALSE
 )
-```
 
-```{r}
+# summarize the rresults 
 summary(fit_sbm)
 ```
+
 
 ```{r}
 # Clustering Bayes Factor for point hypotheses
