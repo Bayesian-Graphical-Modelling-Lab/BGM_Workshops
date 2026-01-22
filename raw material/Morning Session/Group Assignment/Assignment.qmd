@@ -44,7 +44,7 @@ sum(is.na(data_filtered))
 
 # Introduction
 
-Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subcales of the Curiosity and Exploration Inventoruy (CEI-II), using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. In the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness (SBPS), and measures on two subcales of the Curiosity and Exploration Inventory (CEI-II), using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
 
 Recent work has increasingly adopted a network perspective, in which psychological constructs are modeled as systems of interacting components rather than as manifestations of latent variables. Within this framework, network models offer a flexible way to examine conditional associations between individual questionnaire items while controlling for all other variables in the system.
 
@@ -67,7 +67,7 @@ To model conditional associations between items, we estimated a Bayesian Ordinal
 
 Bayesian model averaging was employed to integrate over uncertainty in network structure. As a result, inference was not based on a single network structure, but on the posterior distribution that takes into account the uncertainty with respect to both the partial association parameters and the structure of the network.
 
-## Prior Distributions 
+## Prior Distributions
 
 ### Structure Priors
 
@@ -79,10 +79,9 @@ The partial association parameters were assigned independent Cauchy priors with 
 
 ## Inference
 
-Evidence for the presence or absence of edges was quantified using the inclusion Bays factor. 
-The inclusion Bayes factor _________________________________________________________________________________________________________________________. These Bayes factors were used to classify edges as showing evidence for ______, evidence for ______, or ______ evidence. 
+Evidence for the presence or absence of edges was quantified using the inclusion Bays factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edges as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
 
-______ plots were used to visualize which edges fall into each of these categories. In this study, an inclusion Bayes factor of ______ was used as the threshold for strong evidence for inclusion, and a Bayes factor of ______ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
+\_\_\_\_\_\_ plots were used to visualize which edges fall into each of these categories. In this study, an inclusion Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for inclusion, and a Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
 
 Posterior summaries of edge parameters were obtained from the model-averaged posterior distribution from which posterior mean and HDI intervals were calculated. Centrality measures were not estimated or interpreted.
 
@@ -100,13 +99,13 @@ This section should report general characteristics of the estimated network, inc
 
 This section should describe the results of the Bayes factor analysis at the edge level. Report the edge evidence plot. Particular attention should be paid to patterns of associations within and between the SBPS and CEI-II items. Edge evidence plots or summary tables should be referenced here.
 
-## Edge Parameter Estimates 
+## Edge Parameter Estimates
 
-This section should summarize the estimated edge parameters. Describe the estimated network strucrure. Provide uncertainty estimates.
+This section should summarize the estimated edge parameters. Describe the estimated network structure. Provide uncertainty estimates.
 
 ## Prior Sensitivity Analysis
 
-This section should compare the primary analysis to the analysis with the alternative prior specification. 
+This section should compare the primary analysis to the analysis with the alternative prior specification.
 
 # References
 
