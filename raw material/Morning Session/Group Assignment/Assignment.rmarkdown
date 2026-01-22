@@ -1,0 +1,121 @@
+---
+title: "Group Assignment 1:Bayesian Reanalysis of the French Short Boredom Proneness Scale"
+format: pdf
+author: "Nikola Sekulovski & Maarten Marsman"
+editor: visual
+---
+
+# Information about the assignment 
+
+In this group assignment, you will **reanalyze an existing dataset** using the Bayesian graphical modeling methodology introduced in the workshop. You are provided with a short study description and a **fully specified Methods section**. Your task is to:
+
+* Implement the analysis exactly as implied by the Methods section
+* Make justified analytical decisions where choices are left open
+* Write a very bried **Results section** where the results are summarized.
+
+You will work with the **French subsample (N = 490)** from the original study, using **18 ordinal items** from the **Short Boredom Proneness Scale (SBPS)** and the **Curiosity and Exploration Inventory–II (CEI-II)**.
+
+```{r}
+#| eval: false
+#| warning: false
+#| include: false
+data <- read_csv("N0271_1_raw data.csv")
+data_filtered <- data %>%
+   filter(sample == "fr") %>%
+    select(starts_with("A"), starts_with("G"), starts_with("S"), starts_with("C")) %>%
+    select(-SBPS_IMC_6, -CEIII_IMC7, -sample)
+
+saveRDS(data_filtered, "data_group_assignment.rds")
+
+
+
+# rename the second variable to Gender
+colnames(data_filtered)[2] <- "Gender"
+
+data_filtered$Gender <- as.factor(data_filtered$Gender)
+
+summary(data_filtered)
+
+# check if there is NAs in the data
+sum(is.na(data_filtered))
+```
+
+
+\newpage
+
+# Introduction
+
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. 
+Boredom proneness has been conceptualized as a trait-like tendency to experience boredom frequently and intensely, and has been linked to a broad range of psychological outcomes. The Short Boredom Proneness Scale (SBPS) was developed as a concise unidimensional measure of boredom proneness and has since been translated into multiple languages. 
+
+Recent work has increasingly adopted a network perspective, in which psychological constructs are modeled as systems of interacting components rather than as manifestations of latent variables. Within this framework, network models offer a flexible way to examine conditional associations between individual questionnaire items while controlling for all other variables in the system.
+
+Therefore, in the original validation of the French version of the SBPS, Martarelli et al. (2022) examined the relationships between boredom proneness, curiosity, and exploration using a regularized frequentist network approach. Their analysis suggested positive associations between boredom and curiosity items and negative associations between boredom and exploration items.
+
+The aim of the present study is to **reanalyze the French subsample of the original dataset using Bayesian graphical modeling**. By adopting a Bayesian approach, we explicitly quantify uncertainty in network structure and parameters, and we distinguish between *absence of evidence* and *evidence of absence* for network edges. In particular, we estimate a Bayesian ordinal network model that directly takes into account the ordinal measurement level of the variables.
+
+
+# Method
+
+## Data
+
+The dataset consists of responses from **N = 490 French-speaking participants** ($M_{age} = 33.8$; 73% females and 27% males). The network includes 18 items, all measured on a **7-point Likert scale**:
+
+* 8 items from the Short Boredom Proneness Scale (SBPS)
+* 10 items from the Curiosity and Exploration Inventory–II (CEI-II)
+
+Missing data was handled by listwise deletion. 
+
+## Model Specification
+
+To model conditional associations between items, we estimated a Bayesian Ordinal Markov Random Field (OMRF, Marsman et al., 2025). This model represents each item as a node in an undirected network, with edges encoding conditional dependence relationships between item pairs while controlling for all remaining variables in the network.
+
+Bayesian model averaging was employed to integrate over uncertainty in network structure. As a result, inference was not based on a single selected network, but on the posterior distribution over possible network structures.
+
+## Prior Distributions
+
+
+### Structure Priors
+
+The network structure was assigned a **Bernoulli prior** on edge inclusion indicators. In the primary analysis, default prior settings were used. To assess robustness, a **prior sensitivity analysis** was conducted by repeating the analysis under alternative structure priors reflecting different expectations about network density, ranging from relatively sparse to relatively dense networks.
+
+### Parameter Priors
+
+Conditional association parameters were assigned default priors that regularize edge weights toward zero. To examine the influence of these assumptions, a sensitivity analysis was performed by varying the scale of the parameter priors, allowing for both more concentrated and more diffuse prior distributions.
+
+## Inference and Evidence Quantification
+
+Evidence for the presence or absence of edges was quantified using **Bayes factors**, comparing models in which a given edge was included to models in which it was excluded. Bayes factors were used to classify edges as showing evidence for inclusion, evidence for exclusion, or inconclusive evidence.
+
+Posterior summaries of edge parameters were obtained from the model-averaged posterior distribution. Centrality measures were not estimated or interpreted.
+
+# Results
+
+## Network Estimation
+
+This section should report general characteristics of the estimated network, including the number of nodes, the number of possible edges, and an overall description of how evidence is distributed across included, excluded, and inconclusive edges.
+
+## Edge Evidence
+
+This section should describe the results of the Bayes factor analysis at the edge level. Report how many edges show strong evidence for inclusion, how many show strong evidence for exclusion, and how many remain inconclusive. Particular attention should be paid to patterns of associations within and between the SBPS and CEI-II items. Edge evidence plots or summary tables should be referenced here.
+
+## Edge Parameter Estimates
+
+This section should summarize the estimated edge parameters for edges with non-negligible posterior support. Describe the direction and relative magnitude of the associations, focusing on relationships between boredom, curiosity, and exploration items. Interpretations should remain descriptive and avoid causal language.
+
+## Uncertainty in Parameter Estimates
+
+This section should discuss uncertainty in the estimated parameters. Posterior intervals should be used to highlight which associations are estimated with relatively high precision and which are more uncertain.
+
+## Prior Sensitivity Analysis
+
+This section should compare the primary analysis to the sensitivity analyses. Discuss whether conclusions about edge inclusion, exclusion, and parameter estimates are stable across different structure and parameter priors, and highlight any results that are sensitive to prior assumptions.
+
+
+# References 
+
+- Martarelli, C. S., Baillifard, A., & Audrin, C. (2022). A trait-based network perspective on the validation of the french short boredom proneness scale. *European Journal of Psychological Assessment*. doi: https://doi.org/10.1027/1015-5759/a000718346
+
+- Marsman, M., van den Bergh, D., & Haslbeck, J. M. B. (2025). Bayesian analysis of the ordinal
+Markov random field. *Psychometrika, 90* , 146–182. doi: 10.1017/psy.2024.4
+
