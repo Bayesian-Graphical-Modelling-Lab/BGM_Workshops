@@ -68,7 +68,7 @@ These priors allow us to:
 
 -   Control which edges are more or less likely to be included.
 -   Model the network density.
--   Incorporate the assumption of clustering
+-   Incorporate the assumption of clustering.
 -   Test for the presence of clusters in the network and estimate the cluster membership of the nodes.
 
 In this session we will explore the three structure priors in detail and showcase how to use them in practice with the `easybgm` package.
@@ -81,7 +81,7 @@ This is the prior that was implicitly assumed during the morning lecture.
 Let's visualize the implications of this prior for a small network with $p = 6$ nodes (i.e., $m = 15$ possible edges and $2^m$ possible network structures).
 
 -   Left panel: prior probability assigned to **individual network structures**.
--   Right panel: prior probability distribution over **network density**.
+-   Right panel: prior probability distribution over the **network density**.
 
 ```{r, warning=FALSE, message=FALSE}
 library(ggplot2)
@@ -168,7 +168,7 @@ library(bgms)
 library(easybgm)
 
 fit <- easybgm(
-  data = ADHD[-1, c(1:5)],
+  data = ADHD[, c(2:6)],
   type = "ordinal", # 
   update_method = "adaptive-metropolis",  # use metropolis for speed
   edge_prior = "Bernoulli",  # specify the prior 
@@ -190,7 +190,7 @@ inclusion_matrix[1, 2] <- 0.8  # Higher probability forinclusion between nodes 1
 inclusion_matrix[2, 1] <- 0.8  # Symmetric matrix
 # Fit the model with custom inclusion probabilities
 fit_custom <- easybgm(
-  data = ADHD[-1, c(1:5)],
+  data = ADHD[, c(2:6)],
   type = "ordinal",
   update_method = "adaptive-metropolis",
   edge_prior = "Bernoulli",
@@ -198,7 +198,7 @@ fit_custom <- easybgm(
 )
 ```
 
-For GGMs and mixed data, the Bernoulli prior is the only choice and is automatically set.
+For GGMs and GMs for mixed data, the Bernoulli prior is the only choice and is automatically set.
 By default, the inclusion probability π is set to $0.5$ for all edges, using the `inclusion_prob` argument.
 Here is an example:
 
@@ -207,7 +207,7 @@ library(bgms)
 library(easybgm)
 
 fit <- easybgm(
-  data = ADHD[-1, c(1:5)],
+  data = ADHD[, c(2:6)],
   type = "continuous", # or mixed  
   inclusion_prob = 0.5    # set inclusion probability (default is 0.5)
 )
@@ -221,7 +221,7 @@ The second prior is the **Beta–Bernoulli prior**.
 This prior generalizes the Bernoulli prior by treating the global inclusion probability π as a random variable drawn from a Beta(α, β) distribution.
 This extra layer of uncertainty allows the Beta–Bernoulli prior to model a wider range of network densities.
 By adjusting the parameters α and β, we can encode beliefs about whether the network is likely to be sparse, dense, or somewhere in between.
-Note that this prior assumes that the prior inclusion probability π, is constant across the edges.
+Note that this prior assumes that the prior inclusion probability π is constant across the edges.
 In the default case, both shape parameters of the Beta distribution are set to 1, resulting in a uniform distribution over π.
 This means that all network densities are equally likely a priori.
 
@@ -249,7 +249,7 @@ plot_prior(p = 6, model = "beta", a = 2, b = 5)
 
 ::: {.callout-note title="Interpretation: Beta–Bernoulli(2,5)"}
 -   **Structures (left):** graphs with fewer edges per structure receive higher prior probability.\
--   \*Density (right):\*\* the distribution places more weight on lower values of $k$, i.e., sparser networks.
+-   **Density (right):** the distribution places more weight on lower values of $k$, i.e., sparser networks.
 
 **Implications:**\
 - This prior encodes a belief that networks are more likely to be sparse ($E[\pi] = \frac{\alpha}{\alpha + \beta} \approx 0.29$).\
@@ -258,7 +258,7 @@ plot_prior(p = 6, model = "beta", a = 2, b = 5)
 
 ## 2.2 Workflow in easybgm
 
-This prior is only available both for networks based on ordinal/binary data (i.e., using the ordinal Markov random field).
+This prior is only available for networks based on ordinal/binary data (i.e., for the ordinal Markov random field model).
 The prior is specified by setting `edge_prior = "Beta-Bernoulli"` in the `easybgm()` function.
 By default, the parameters $\alpha$ and $\beta$ are set to $1$, representing a uniform prior over inclusion probability.
 Here is an example:
@@ -268,7 +268,7 @@ library(bgms)
 library(easybgm)
 
 fit <- easybgm(
-  data = ADHD[-1, c(1:5)],
+  data = ADHD[, c(2:6)],
   type = "ordinal", 
   update_method = "adaptive-metropolis",
   edge_prior = "Beta-Bernoulli", 
@@ -279,6 +279,8 @@ fit <- easybgm(
 
 As a guide on deciding how to set the $\alpha$ and $\beta$ parameters, you can use [this](https://amshenao.shinyapps.io/FINAL/) Shiny app, which can help you to visualize the distribution.
 The app also provides the measures of central tendency and dispersion of the distribution, given the specified parameters.
+
+# Prior Odds Under the Bernoulli and Beta-Bernoulli Priors 
 
 # 3. The Stochastic-Block Model
 
@@ -298,13 +300,15 @@ In many psychological network theories, we expect nodes of the network to cluste
 -   Symptoms of psychological disorders may cluster into domains (e.g., ADHD or Autism, Depression or Anxiety).
 -   Some symptoms may connect domains, suggesting potential **bridges**, which some authors have argued are important in the study of comorbidity of mental disorders (e.g., Cramer et al., 2010; Borsboom & Cramer, 2013).
 
+![](figures/sbm_sara.png){width="80%"}
+
 So far, there have only been post-hoc methods to detect such clusters in estimated networks (e.g., using Exploratory Graph Analysis).
 
 However, these methods do not allow us to incorporate prior beliefs about clustering into the estimation process itself and to test for the presence of clusters (i.e., test a theory).
 
-We need a prior that directly encodes the clustering structure.
+We need a prior (i.e., a model on the network structure) that directly incorporates the clustering assumption into the network model.
 
-## 3.2 The Stochastic Block Model as Network Prior
+## 3.2 The Stochastic Block Model as a Prior on the Network Structure of the OMRF
 
 The **Stochastic Block Model (SBM)** addresses this by placing a prior directly on **clustering structure**:
 
@@ -317,7 +321,7 @@ The **Stochastic Block Model (SBM)** addresses this by placing a prior directly 
 1.  **Block assignments**
     -   Each node is assigned to a latent block based on the data.
 2.  **Edge probabilities**
-    -   For each pair of nodes, an edge probability $\pi_{aa}$ is drawn from a Beta($\alpha_{within}, \beta_{within}$), for edges belonging to the same cluster and and edge probability $\pi_{ab}$ is drawn from a Beta($\alpha_{between}, \beta_{between}$), for edges belonging to different clusters.
+    -   For each pair of nodes, an edge probability $\pi_{aa}$ is drawn from a Beta($\alpha_{within}, \beta_{within}$), for edges belonging to the same cluster and edge probability $\pi_{ab}$ is drawn from a Beta($\alpha_{between}, \beta_{between}$), for edges belonging to different clusters.
 3.  **Edges**
     -   Once block memberships and block-to-block probabilities are set, each possible edge is sampled as a Bernoulli($\pi_{ab}$) variable.
     -   This is the same Beta-Bernoulli mechanism as before — but now $\pi$ depends on which blocks the two nodes belong to.
@@ -327,7 +331,7 @@ In the Bayesian SBM, both the number of clusters and the block-to-block edge pro
 
 ### Hyperparameters
 
--   **λ (lambda):** controls the prior on the number of clusters (it is the rate parameter of a truncated Poisson distribution).\
+-   **λ:** controls the prior on the number of clusters (it is the rate parameter of a truncated Poisson distribution).\
     *Interpretation:* this plays a role similar to π in the Bernoulli prior — it encodes how complex we expect the network structure to be, but here in terms of clusters rather than edges.
 
 Unlike the standard Poisson, λ is not itself the expectation but is closely related.\
@@ -342,7 +346,7 @@ In other words, λ does not equal the expected number of clusters directly (as i
 -   **α, β** shape the Beta–Bernoulli priors on block-to-block connections for the edges within clusters and between clusters.\
     *Interpretation:* just as before, these parameters determine whether we expect connections to be sparse or dense, however, now we have two pairs of parameters: one for within-block connections ($\alpha_{within}, \beta_{within}$) and one for between-block connections ($\alpha_{between}, \beta_{between}$).
 
--   **Dirichlet parameter (dirichlet_alpha):** governs the distribution of the allocation of the nodes across clusters.\
+-   **Dirichlet concentration parameter:** governs the distribution of the allocation of the nodes across clusters.\
     *Interpretation:* this parameter controls how balanced we expect cluster sizes to be.
 
     -   With larger values, the prior favors clusters of similar size (nodes are spread more evenly across blocks).\
@@ -353,12 +357,12 @@ In other words, λ does not equal the expected number of clusters directly (as i
 
 ## 3.3 Workflow in easybgm
 
-The central goal of SBM analysis is to evaluate evidence for clustering and to estimate the cluster membership of the nodes.
+The central practical goal, of a network analysis using the SBM prior, is to test for clustering and to estimate the cluster membership of the nodes.
 In practice, this is done through **clustering Bayes factors**.
 You can also find a tutorial that explains how to perform a clustering analysis using both `easybgm` and `bgms` packages [here](https://www.nikolasekulovski.com/blog/post2/).
 
 In this example, we will be using a simulated data set with 12 ordinal variables, where we know that the true number of clusters is 2.
-We will leave all the default prior parameter settings (i.e., we will set lambda = 1, all shape parameters of the Beta distributions to 1, and the Dirichlet alpha also to 1.).
+We will leave all the prior parameter settings at their default values (i.e., we set the expected number of clusters to 1, all Beta distribution shape parameters to 1, and the Dirichlet concentration parameter to 1.).
 
 Here is the workflow:
 
@@ -386,9 +390,9 @@ fit_sbm <- easybgm(
 summary(fit_sbm)
 ```
 
-
 ```{r}
-# Clustering Bayes Factor for point hypotheses
+#| message: false
+#| warning: false
 library(easybgm)
 clusterBayesfactor(fit_sbm, type = "point", b1 = 2, b2 = 1)
 ```
@@ -456,13 +460,16 @@ Upload your variable list, specify context, and obtain priors ready to use in `e
 
 ⚠️ Note: The **R package requires an OpenAI API key** to connect to GPT models.\
 This makes it a proof-of-concept tool for now, but it illustrates how priors can be informed not only by hand-tuning, but also by **AI-assisted elicitation**.
+It should be also noted that LLMs are not infallible and may produce inaccurate or biased outputs.\
+Therefore, it is crucial to critically evaluate and validate the elicited priors before using them in any analysis.
+And always perform a prior sensitivity analysis to assess the robustness of your results to different prior specifications.
 :::
 
 # Recap
 
 **In this session, we have:**\
-- Explored three priors on network structure: **Bernoulli**, **Beta–Bernoulli**, and **Stochastic Block Model (SBM)**.\
-- Discussed how each prior encodes different assumptions about edge inclusion, network density, and clustering.\
-- Practiced estimating networks under each prior using the `easybgm` package.\
-- Learned how to test for clustering and estimate cluster membership with the SBM prior.
-- Now you are equipped to choose and implement structure priors that align with your research questions and theoretical expectations in Bayesian graphical modeling!
+-  Explored three priors on network structure: **Bernoulli**, **Beta–Bernoulli**, and **Stochastic Block Model (SBM)**.\
+-  Discussed how each prior encodes different assumptions about edge inclusion, network density, and clustering.\
+-  Practiced estimating networks under each prior using the `easybgm` package.\
+-  Learned how to test for clustering and estimate cluster membership with the SBM prior.\
+-  Now you are equipped to choose and implement structure priors that align with your research questions and theoretical expectations in Bayesian graphical modeling!
