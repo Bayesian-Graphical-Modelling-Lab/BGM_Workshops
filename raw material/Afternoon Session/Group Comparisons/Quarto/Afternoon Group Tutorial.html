@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Maarten Marsman">
-<meta name="dcterms.date" content="2027-07-01">
+<meta name="dcterms.date" content="2028-02-01">
 
-<title>Part IIa: The Bayesian Approach to Network Comparison</title>
+<title>Tutorial on Network Comparison</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -3785,6 +3785,7 @@ margin-bottom: 1em;
   <li><a href="#what-should-you-do-in-practice" id="toc-what-should-you-do-in-practice" class="nav-link" data-scroll-target="#what-should-you-do-in-practice">What should you do in practice?</a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#recap-of-part-ii" id="toc-recap-of-part-ii" class="nav-link" data-scroll-target="#recap-of-part-ii">Recap of Part II</a></li>
   </ul>
 </nav>
 </div>
@@ -3792,7 +3793,7 @@ margin-bottom: 1em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Part IIa: The Bayesian Approach to Network Comparison</h1>
+<h1 class="title">Tutorial on Network Comparison</h1>
 </div>
 
 
@@ -3809,7 +3810,7 @@ margin-bottom: 1em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 1, 2027</p>
+      <p class="date">February 1, 2028</p>
     </div>
   </div>
   
@@ -3849,10 +3850,9 @@ margin-bottom: 1em;
 </li>
 <li>Use <strong>Bayes factors</strong> to test group differences in network parameters and interpret their strength<br>
 </li>
-<li>Visualize difference estimates and uncertainty clearly<br>
+<li>Visualize evidence for group differences and relate it to estimated network structure<br>
 </li>
-<li>Examine the influence of <strong>prior assumptions</strong> on group comparisons<br>
-</li>
+<li>Assess the sensitivity of group comparison results to <strong>prior settings</strong></li>
 </ul>
 </div>
 <p>In this tutorial you will largely mirror the analyses from the preceding lecture.</p>
@@ -4693,6 +4693,24 @@ A hierarchical alternative in which the inclusion probability itself is learned 
 </ul>
 </section>
 </section>
+</section>
+<section id="recap-of-part-ii" class="level1">
+<h1>Recap of Part II</h1>
+<p>In this session, we extended the Bayesian network framework to the case of <strong>group comparisons</strong>, focusing on what this approach adds beyond estimating networks separately for each group.</p>
+<p>In particular, you have seen the practical benefits of Bayesian group comparison:</p>
+<ul>
+<li><em>You can obtain evidence for both <strong>group differences</strong> and <strong>group similarity</strong></em><br>
+</li>
+<li><em>You can distinguish inconclusive results from genuine evidence for invariance</em><br>
+</li>
+<li><em>You can relate evidence for differences to the estimated network structure</em></li>
+</ul>
+<p>To put this into practice, we walked through the full group comparison workflow:</p>
+<p>✅ Inspecting group-specific networks<br>
+✅ Quantifying evidence for edge differences using Bayes factors<br>
+✅ Visualizing results with edge evidence and network plots<br>
+✅ Examining the sensitivity of conclusions to prior settings</p>
+<p>Taken together, these tools allow you to move beyond informal visual comparisons and make principled statements about <strong>which network differences are supported by the data, which are not, and which remain uncertain</strong>.</p>
 </section>
 
 </main>
