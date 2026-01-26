@@ -1,0 +1,777 @@
+---
+title: "Tutorial on Bayesian Graphical Modeling"
+author: "Maarten Marsman"
+date: "2026-26-01"
+format:
+  html:
+    css:
+     - font-awesome.min.css
+     - ajohnson.css
+    include-in-header: 
+      - text: |
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    code-fold: true
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    df-print: paged
+    self-contained: true
+engine: knitr
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 🧭 Recap and Session Setup
+
+In the lecture, we explored how **Bayesian reasoning** helps distinguish *evidence of absence* from *absence of evidence*—showing how Bayes factors quantify support for or against network connections.  
+
+Now, in the tutorial, we’ll put these ideas into practice. You’ll learn how to estimate Bayesian network models in **R** and **JASP**, interpret edge evidence, and understand how prior assumptions and uncertainty shape your conclusions.
+
+---
+
+## 🎯 Learning Outcomes
+
+By the end of this session, you will be able to:
+
+::: {.goals}
+- Fit network models using `easybgm` or `JASP`  
+- Use **Bayes factors** to test edge inclusion and interpret their strength  
+- Visualize network estimates and uncertainty clearly  
+- Examine the influence of **prior assumptions** on network conclusions  
+:::
+
+---
+
+## 📘 This Session
+
+::: {.note}
+**Recommended Reading:**
+
+- Huth, K., de Ron, J., Goudriaan, A., Luigjes, J., Mohammadi, R., van Holst, R., Wagenmakers, E.-J., & Marsman, M. (2023). Bayesian Analysis of Cross-Sectional Networks: A Tutorial in R and JASP. *Advances in Methods and Practices in Psychological Science*, *6*, 1-18. doi: 10.1177/25152459231193334
+- Huth, K., Keetelaar, S., Sekulovski, N., van den Bergh, D., & Marsman, M. (2024). Simplifying Bayesian Analysis of Graphical Models for the Social Sciences With easybgm: A User-Friendly R-Package. *Advances .in/psychology*, *e66366*. doi: 10.56296/aip00010/
+
+**Optional Reading**
+
+- Sekulovski, N., Keetelaar, S., Huth, K., Wagenmakers, E.-J., van Bork, R., van den Bergh, D., & Marsman, M. (2024). Testing Conditional Independence in Psychometric Networks: An Analysis of Three Bayesian Methods. *Multivariate Behavioral Research*, *59*, 913-933. doi: 10.1080/00273171.2024.2345915
+
+
+**R Setup Tip:**
+Make sure to install and load the following libraries before running the examples:
+
+```r
+library(easybgm)
+library(BDgraph)
+library(bgms)
+```
+:::
+
+
+Before we dive into the hands-on part, let’s briefly revisit what we covered in Part I and why it matters for what we’re about to do.
+
+---
+
+## 🔍 Two fundamental questions
+
+In network analysis, we ask two key questions:  
+
+1️⃣ **Is there an effect?** (edge inclusion)  
+2️⃣ **What is the effect?** (edge strength and sign)
+
+<div style="text-align: center;">
+  <img src="figures/two_questions.png" width=500px>
+</div>
+
+> In Part I, we focused on Question 1 — *testing whether an edge exists*.  
+> In this tutorial, we’ll also explore Question 2 — *estimating how strong and positive/negative that edge is.*
+
+---
+
+### 💡 Evidence vs. absence
+
+Network estimation alone cannot tell us why an edge is missing —  
+is it truly absent, or do we simply lack information?
+
+<div style="text-align: center;">
+  <img src="figures/two_conclusions.png" width=500px>
+</div>
+
+> The Bayesian approach helps us distinguish between  
+> **absence of evidence** and **evidence of absence** using Bayes factors.
+
+---
+
+### 📊 From priors to posteriors
+
+We assign **prior probabilities** to possible network structures,  
+then update them with data using **Bayes’ Rule**.
+
+<div style="text-align: center;">
+  <img src="figures/prior_posterior_update.png" width=500px>
+</div>
+
+> A posterior probability expresses how plausible each structure is *after* seeing the data.
+
+---
+
+### 🧠 Quick quiz
+
+Try to recall:
+
+1. What does a Bayes factor compare?  
+2. What does a value of $\text{BF}_{10} = 10$ mean?  
+3. Why is it important to separate *absence of evidence* from *evidence of absence*?
+
+*(Discuss with your neighbor or write down your answers before we move on!)*
+
+---
+
+Next, we’ll apply all this in practice — estimating and interpreting Bayesian network models using **easybgm** and **JASP**.
+
+
+# Bayesian Graphical Modeling Software
+
+Bayesian network models are powerful, but historically they’ve been out of reach for researchers without a background in programming or statistical computing.
+
+The [Bayesian Graphical Modeling Lab](https://bayesiangraphicalmodeling.com/) contributes to an ecosystem of **open tools** that make these methods more accessible. Our goal is to help researchers explore network structures using **principled Bayesian inference** — without having to write complex MCMC code.
+
+We work to make Bayesian graphical modeling both **transparent** and **approachable**, whether you use R or point-and-click interfaces like JASP.
+
+---
+  
+## Core Inference Engines
+  
+There are three main computational packages used in Bayesian network modeling. Each makes different assumptions and offers different features. Here’s a comparison:
+  
+| Package           | Data Types                    | Structure Learning | Estimation | Priors                                  | Inference       | Highlights                                       |
+|-------------------|-------------------------------|--------------------|------------|------------------------------------------|-----------------|--------------------------------------------------|
+| **BDgraph**</br><img src="figures/bdgraph_sticker.png" width="75px">| Continuous, Binary, Ordinal, Count† | ✅ Yes         | ❌ No     | Bernoulli                                | Model-averaged  | Structure learning for mixed data                 |
+| **BGGM**</br><img src="figures/bggm_sticker.png" width="75px">| Continuous, Binary, Ordinal†        | ❌ No          | ✅ Yes    | None                                     | Single model    | Edge estimation and network comparison |
+| **bgms** </br><img src="figures/bgms_sticker.svg" width="75px">| Binary, Ordinal *(Continuous in dev)* | ✅ Yes         | ✅ Yes    | Bernoulli, Beta-Bernoulli, Stochastic Block | Model-averaged  | Structure learning + estimation, network comparison, clustering, missing data imputation   |
+
+† BDgraph and BGGM use probit models for ordinal/binary data, not Markov random field models.
+
+---
+  
+## Why We Use `easybgm` and JASP
+  
+Rather than asking you to choose and learn each package separately, we use [`easybgm`](https://github.com/KarolineHuth/easybgm) — a unified interface that wraps around the best parts of these engines.
+
+- Handles preprocessing, fitting, and plotting  
+- Standardizes output across packages  
+- Allows prior customization  
+- Integrated into **JASP** for non-coders
+
+Depending on your data and choices, `easybgm` automatically uses the appropriate back-end:  
+  `BDgraph`, `bgms`, or `BGGM`.
+
+---
+
+# Testing the Structure of the Network
+
+We set up our analysis by loading a dataset containing responses from a sample of 2,000 individuals on 13 psychological indicators. The data includes three scale scores, and ten ordinal items.
+
+```r
+data = read.csv("https://raw.githubusercontent.com/Bayesian-Graphical-Modelling-Lab/BGM_Workshops/6bc21f12553120bac42abebb232dafe55ba87426/data/exampledata.csv")[, -1]
+head(data)
+```
+
+::: {.panel-tabset}
+
+### Setup (R)
+
+```r
+library(easybgm)
+data = read.csv("data = read.csv("https://raw.githubusercontent.com/Bayesian-Graphical-Modelling-Lab/BGM_Workshops/6bc21f12553120bac42abebb232dafe55ba87426/data/exampledata.csv")[, -1]")[, -1]
+head(data)
+```
+
+### Setup (JASP)
+
+#### Step 1: Open JASP
+
+Launch JASP and locate the main toolbar.
+
+#### Step 2: Open the Data File
+
+1. Click the **three horizontal bars** in the top-left corner (☰).
+2. Select **"Open" → "Computer" → "Browse…"**
+3. Navigate to your `.csv` file and click **Open**.
+
+After importing, you should see your dataset listed in the main workspace.
+
+#### Step 3: Open the Bayesian Network Analysis Module
+
+1. Click the **blue plus sign** (`+`) at the top-right of the JASP window to open the modules menu.
+2. Scroll down to find the **Network** category.
+3. Under **Network**, click **Bayesian** to load the module.
+
+Once loaded, you’ll see a new menu item: **"Bayesian Network"** under the *Network* tab in the top menu bar.
+
+<div style="text-align: center;">
+  <img src="figures/jasp_landing.png" width=600px>
+</div>
+
+:::
+
+
+## Fit the Model
+
+Before we fit the model, it's useful to explore the function we'll use:
+```r
+?easybgm
+```
+
+Here’s the full function signature to get oriented:
+
+```r
+easybgm(
+  data,
+  type,
+  package = NULL,
+  not_cont = NULL,
+  iter = 10000,
+  save = FALSE,
+  centrality = FALSE,
+  progress = TRUE,
+  posterior_method = "model-averaged",
+  ...
+)
+```
+The `type` argument tells easybgm what kind of data you’re working with — for example, `"continuous"`, `"binary"`, `"ordinal"`, or `"mixed"`. The package argument chooses the estimation engine.
+
+To keep things fast and simple for this example, we’ll treat the data as if it were continuous (yes, even though it isn’t fully), and use `BGGM` to fit the model.
+
+```{r, eval = FALSE}
+set.seed(1)
+fit = easybgm(
+  data = data,
+  type = "continuous",
+  package = "BGGM",
+  iter = 1e5,
+  burnin = 1e4,
+  save = TRUE,
+  centrality = TRUE,
+  progress = FALSE)
+```
+
+Now let’s fit the model and summarize the results.
+
+::: {.panel-tabset}
+
+### Exercise
+Fill in the blanks below to use the `easybgm()` function on the workshop dataset and inspect the `summary(fit)` output. 
+
+```r
+set.seed(1)
+fit = easybgm(data = data,
+              type = ____________,
+              package = ____________,
+              iter = 1e5,
+              burnin = 1e4,
+              save = TRUE,
+              centrality = TRUE,
+              progress = TRUE)
+summary(fit)               
+```
+
+✅ What is the total number of edges?  
+✅ Which edge(s) are excluded with high certainty?
+
+### Solution (R)
+
+```r
+set.seed(1)
+fit = easybgm(data = data,
+              type = "continuous",
+              package = "BGGM",
+              iter = 1e5,
+              burnin = 1e4,
+              save = TRUE,
+              centrality = TRUE,
+              progress = TRUE)
+summary(fit)               
+```
+
+```r
+ BAYESIAN ANALYSIS OF NETWORKS 
+ Model type: ggm 
+ Number of nodes: 13 
+ Fitting Package: bggm 
+--- 
+ EDGE SPECIFIC OVERVIEW 
+                  Relation Estimate Posterior Incl. Prob.  Inclusion BF     Category
+         stress-depression    0.593                 1.000 1.513714e+196     included
+        anxiety-depression    0.357                 1.000  5.701982e+58     included
+    extraverted-depression   -0.023                 0.119  1.350000e-01 inconclusive
+    quarrelsome-depression    0.156                 1.000  3.565962e+09     included
+     dependable-depression    0.038                 0.246  3.260000e-01 inconclusive
+               ...             ...                    ...         ...         ...  
+            
+ Bayes Factors larger than 10 were considered sufficient evidence for the classification 
+ Bayes factors were obtained using Bayesian model-averaging. 
+ --- 
+ AGGREGATED EDGE OVERVIEW 
+ Number of edges with sufficient evidence for inclusion: 47 
+ Number of edges with insufficient evidence: 11 
+ Number of edges with sufficient evidence for exclusion: 20 
+ Number of possible edges: 78
+```
+
+### Solution (JASP)
+
+<div class="screenshot-block">
+
+  <img src="figures/jasp_model.png" alt="Step 1: Set up model">
+  
+  <img src="figures/jasp_summary_options.png" alt="Step 2: Choose the summary options">
+  
+  <img src="figures/jasp_summary_table.png" alt="Results: Bayes factor table">
+
+</div>
+
+:::
+
+
+### Evidence Thresholds
+By default, `easybgm` uses an evidence threshold (Bayes factor) of 10:
+
+- **BF > 10** → evidence for inclusion
+- **BF < 1/10** → evidence for exclusion
+- **In between** → inconclusive
+
+You can adjust this threshold to make the evidence criterion more or less strict.
+
+::: {.panel-tabset}
+
+### Exercise
+
+Change the evidence threshold in `summary(fit, evidence_thresh = ___)` and see how the number of included and excluded edges changes.
+
+✅ Which edges change their classification?  
+✅ What happens when you use a very lenient threshold (e.g., 1.5)?
+
+This gives you practice for adjusting evidence sensitivity in Part III.
+
+### Solution (R)
+
+```r
+summary(fit, evidence_thresh = 3)
+```
+
+```r
+ BAYESIAN ANALYSIS OF NETWORKS 
+ Model type: ggm 
+ Number of nodes: 13 
+ Fitting Package: bggm 
+--- 
+ EDGE SPECIFIC OVERVIEW 
+                  Relation Estimate Posterior Incl. Prob.  Inclusion BF     Category
+         stress-depression    0.593                 1.000 1.513714e+196     included
+        anxiety-depression    0.357                 1.000  5.701982e+58     included
+    extraverted-depression   -0.023                 0.119  1.350000e-01     excluded
+    quarrelsome-depression    0.156                 1.000  3.565962e+09     included
+     dependable-depression    0.038                 0.246  3.260000e-01     excluded
+               ...             ...                    ...         ...         ...
+
+ Bayes Factors larger than 3 were considered sufficient evidence for the classification 
+ Bayes factors were obtained using Bayesian model-averaging. 
+ --- 
+ AGGREGATED EDGE OVERVIEW 
+ Number of edges with sufficient evidence for inclusion: 48 
+ Number of edges with insufficient evidence: 11 
+ Number of edges with sufficient evidence for exclusion: 19 
+ Number of possible edges: 78
+```
+
+### Solution (JASP)
+
+In JASP, there is **no automatic classification table** showing which edges are included, excluded, or inconclusive.
+
+But don’t worry, you can **determine this yourself** by inspecting the inclusion Bayes factors in the output table. 💪  
+(And we believe in you!)
+
+✅ A visual summary is available: the **edge evidence plot**, which we’ll explore in the next section.
+
+:::
+
+
+## Visualizing Results
+
+The summary table is comprehensive but can become hard to interpret. Visualizations often help reveal patterns and structure more intuitively.
+
+Start with the edge evidence plot:
+
+```r
+plot_edgeevidence(fit, evidence_thresh = 10, legend = FALSE)
+```
+
+![](figures/easybgm_run_edgeevidenceplot.svg){fig-align="center" width=50%}
+
+This plot categorizes edges by their Bayes factor:
+
+- <span style="background-color: #416388;color: white; padding: 0.2em;">**Blue**</span>: strong evidence for inclusion
+- <span style="background-color: #7B98AF;color: white; padding: 0.2em;">**Light Blue**</span>: weak evidence for inclusion
+- <span style="background-color: #EBA626;color: white; padding: 0.2em;">**Yellow**</span>: strong evidence for exclusion
+- <span style="background-color: #F8CA7D;color: white; padding: 0.2em;">**Light Yellow**</span>: weak evidence for exclusion
+- <span style="background-color: #AFAFAF;color: white; padding: 0.2em;">**Gray**</span>: inconclusive
+
+
+::: {.panel-tabset}
+
+### Exercise
+> 1. What does the edge evidence plot show?  
+> 2. How do you interpret an edge inclusion Bayes factor?  
+> 3. What is the default threshold value used in the `plot_edgeevidence()` function?  
+
+### Try it
+👉 Open the R help file with:  
+```r
+?plot_edgeevidence
+```  
+Explore the available arguments and see how the threshold can be adjusted.  
+
+### Solution
+1. **What does the edge evidence plot show?**  
+   It visualizes the strength of evidence for or against including each edge in the network, based on the Bayes factor.  
+
+2. **How do you interpret an edge inclusion Bayes factor?**  
+   The Bayes factor compares two competing hypotheses:  
+   - *H₁*: the edge should be included in the network.  
+   - *H₀*: the edge should be excluded.  
+   For example, a Bayes factor of 10 means the data are ten times more likely under *H₁* than under *H₀*. Conversely, a Bayes factor of 1/10 means the data are ten times more likely under *H₀* than *H₁*.  
+
+3. **What is the default threshold in `plot_edgeevidence()`?**  
+   The default threshold is **10**. Edges with Bayes factors above this value are typically considered to have strong evidence for inclusion.  
+
+:::
+
+
+You can lower the threshold to see how evidence strength varies:
+
+```r
+plot_edgeevidence(fit, evidence_thresh = 3, legend = FALSE)
+```
+
+If the network appears cluttered (a so-called “spaghetti plot”), use the `split` option to separate edges with any evidence for inclusion from those with evidence for exclusion.
+
+::: {.panel-tabset}
+### Exercise
+Use `plot_edgeevidence()` with and without the `split = TRUE` option.
+
+✅ Which edge categories become clearer when you split the plot?  
+✅ Do your visual conclusions match the summary table?
+
+
+### Solution (R)
+
+```r
+par(mfrow = c(1, 2))
+plot_edgeevidence(fit, evidence_thresh = 10, split = TRUE, legend = FALSE)
+```
+
+![](figures/easybgm_run_split.svg){fig-align="center" width=100%}
+
+The left panel shows edges with BF > 1; the right panel shows those with BF ≤ 1.
+
+### Solution (JASP)
+
+In JASP, you can plot the edge evidence using evidence categorization.
+
+<div class="screenshot-block">
+
+  <img src="figures/jasp_edge_evidence_setup.png" alt="Step 1: Set up plot">
+  
+  <img src="figures/jasp_edge_evidence_plot.png" alt="Results: Evidence plot">
+
+</div>
+
+:::
+
+
+# Plotting the Network Parameters
+
+## Estimation: What is the strength and direction of the edge?
+
+Once we’ve established which edges have credible evidence for inclusion, we can inspect the **strength and direction** of those connections. But which ones should we show?
+  
+In Bayesian model averaging, not all edges have convincing evidence. Some might be weak or ambiguous. By default, `easybgm` visualizes the **median probability model**, the network consisting of all edges with a posterior inclusion probability > 0.5 (or equivalently, Bayes Factor > 1). You can adjust this threshold using the `exc_prob` argument:
+
+```r
+plot_network(fit, exc_prob = 0.5)
+```
+
+![](figures/easybgm_run_networkplot.svg){fig-align="center" width=50%}
+
+
+::: {.panel-tabset}
+
+### Exercise
+1. What conclusions can you draw from the estimated network?  
+2. This network is based on the **median probability model**. What does that mean, and how does it relate to the inclusion Bayes factors from the previous part?  
+3. Run `plot_network()` with and without the `exc_prob` argument. Does changing the `exc_prob` value influence which edges are shown?  
+
+### Solution (R)
+```r
+# Default plot (median probability model: exc_prob = 0.5)
+plot_network(fit)
+
+# Stricter threshold: exc_prob = 0.8
+plot_network(fit, exc_prob = 0.8)
+```
+
+- The network shows **positive connections**, with all nodes connected to at least one other node.  
+- The strongest link is between **Q7 and Q8**.  
+- The network is **not overly dense**, consistent with the edge evidence plots.  
+- Because this is the **median probability model**, only edges with inclusion probability > 0.5 (equivalently BF > 1) are shown.  
+- Increasing `exc_prob` (e.g., to 0.8) removes weaker edges → the network becomes sparser.  
+
+### Solution (JASP)
+
+<div class="screenshot-block">
+
+  <img src="figures/jasp_plot_options.png" alt="Step 1: Set up plot">
+  
+  <img src="figures/jasp_plot_result.png" alt="Result: Network plot">
+
+</div>
+
+- JASP also shows the **median probability model** by default.  
+- You can adjust the **edge inclusion threshold** in the analysis options.  
+- Raising the threshold makes the network sparser, lowering it makes it denser.  
+
+:::
+
+Under the hood, `easybgm` uses `qgraph`, meaning you can pass any of its arguments to fully control the layout and style. For example, grouping nodes or setting colors.
+
+## Parameter Uncertainty: HDI Intervals
+  
+The network plot shows **posterior means**, but this hides uncertainty. A useful complement is the **posterior highest density interval (HDI)**, which shows how stable the estimates are
+  
+This plot highlights which posterior distributions are tightly concentrated, and which are uncertain, helping you interpret results more cautiously.
+
+
+::: {.panel-tabset}
+
+### Exercise
+Use `plot_parameterHDI()` to inspect parameter uncertainty.
+
+✅ Which edges have narrow (precise) intervals?  
+✅ Are any edge estimates near zero?
+
+### Solution (R)
+```r
+plot_parameterHDI(fit)
+```
+
+![](figures/easybgm_run_hdi.svg){fig-align="center" width=50%}
+
+### Solution (JASP)
+
+JASP does not (yet) include a Highest Density Interval (HDI) plot for edge weights.
+
+If you want to assess uncertainty in edge parameters, you’ll need to use R and the `plot_parameterHDI()` function from `easybgm`.
+
+We expect this feature to be added in a future JASP release.
+
+:::
+
+## Centrality
+
+Centrality measures attempt to quantify how “important” a node is in the network. For example, how often it sits on the shortest path between other nodes (betweenness), or how connected it is overall (degree).
+
+While popular, centrality metrics in psychological networks have been criticized for their instability and unclear interpretation, especially in small or highly interconnected networks.
+
+The nice thing about the Bayesian approach is that it provides **credible intervals** for these centrality indices, giving you a sense of how uncertain these summaries are.
+
+```r
+plot_centrality(fit)
+```
+
+![](figures/easybgm_run_centrality.svg){fig-align="center" width=50%}
+
+> ⚠️ *Caution:* Interpret centrality values as descriptive summaries — not causal influence or intervention targets. Use the credible intervals to judge whether centrality differences are meaningful.
+
+
+# Understanding Priors in Bayesian Network Models
+
+Priors allow us to encode assumptions about the network *before* seeing the data. These assumptions affect:
+  
+- **Structure**: Which edges we expect to be present  
+- **Parameters**: How strong or weak we expect connections to be
+
+Some prior choices in `easybgm` to investigate:
+  
+| Prior Type       | Argument Example                | Interpretation                        |
+|------------------|----------------------------------|----------------------------------------|
+| Structure prior   | `inclusion_probability = 0.1`   | Sparse network (few edges)             |
+| Structure prior   | `edge_prior = "Beta-Bernoulli"` | Allows data-driven sparsity tuning     |
+| Parameter prior   | `interaction_scale = 0.25`      | Shrinks estimates toward zero (informative) |
+| Parameter prior   | `interaction_scale = 2.5`       | Allows large edge effects (diffuse, default) |
+  
+::: {.callout-warning}
+**Tip:** Try multiple priors and see how your conclusions change. This is a key part of Bayesian modeling.
+:::
+  
+# Prior Sensitivity Check
+  
+Let’s explore how different structure priors influence the analysis using two assumptions: one sparse and one dense.
+
+```r
+library("bgms")
+```
+
+::: {.panel-tabset}
+
+### Exercise
+Estimate two networks on the ordinal variables (i.e., `data[, -c(1:3)]` in the dataset) using the `bgms` package:
+  
+- One with a **sparse prior**: `inclusion_probability = 0.1`  
+- One with a **dense prior**: `inclusion_probability = 0.7`
+
+Then use `summary()` and `plot_edgeevidence()` to compare:
+  
+✅ Which edges are included or excluded?  
+✅ Does the posterior structure probability change?
+
+You can run the most recent version of the `bgms` software from `easybgm`, but to be on the save side, lets fix the `iter` and `update_method` options:
+
+```r
+fit <- easybgm(
+  data = data[, -c(1:3)],
+  type = "ordinal",
+  package = "bgms",
+  iter = 2e3, # bgms performs 4 chains (runs) with "iter" iterations in parallel
+  update_method = "adaptive-metropolis", # default "nuts" takes long!
+)
+```
+  
+### Solution
+  
+```r
+library(easybgm)
+library(bgms)
+
+# Sparse prior model
+fit_sparse <- easybgm(
+  data = data[, -c(1:3)],
+  type = "ordinal",
+  package = "bgms",
+  iter = 2e3,
+  update_method = "adaptive-metropolis",
+  inclusion_probability = 0.1,
+  seed = 1234
+)
+
+# Dense prior model
+fit_dense <- easybgm(
+  data = data[, -c(1:3)],
+  type = "ordinal",
+  package = "bgms",
+  iter = 2e3,
+  update_method = "adaptive-metropolis",
+  inclusion_probability = 0.7,
+  seed = 1234
+)
+```
+
+```r
+summary(fit_sparse)
+```
+
+```r
+AGGREGATED EDGE OVERVIEW 
+Number of edges with sufficient evidence for inclusion: 35 
+Number of edges with insufficient evidence: 7 
+Number of edges with sufficient evidence for exclusion: 3 
+Number of possible edges: 45 
+
+--- 
+STRUCTURE OVERVIEW 
+Number of visited structures: 190 
+Number of possible structures: 3.518437e+13 
+Posterior probability of most likely structure: 0.103375 
+```
+
+```r
+summary(fit_dense)
+```
+```r
+AGGREGATED EDGE OVERVIEW 
+Number of edges with sufficient evidence for inclusion: 35 
+Number of edges with insufficient evidence: 4 
+Number of edges with sufficient evidence for exclusion: 6 
+Number of possible edges: 45 
+
+--- 
+STRUCTURE OVERVIEW 
+Number of visited structures: 149 
+Number of possible structures: 3.518437e+13 
+Posterior probability of most likely structure: 0.388625 
+```
+
+```r
+# Extract layout from one fit
+layout_fixed <- fit_sparse$plot$layout
+
+# Plot both networks using the same layout
+par(mfrow = c(1, 2))
+
+plot_edgeevidence(
+  fit_sparse,
+  legend = FALSE,
+  layout = layout_fixed
+)
+
+plot_edgeevidence(
+  fit_dense,
+  legend = FALSE,
+  layout = layout_fixed
+)
+```
+
+![](figures/easybgm_run_sensitivity.svg){fig-align="center" width=100%}
+
+
+### Solution (JASP)
+
+<div class="screenshot-block">
+
+  <img src="figures/jasp_prior_options.png" alt="Step 1: Set up priors">
+  
+  <img src="figures/jasp_bernoulli.png" alt="Result: Bernoulli prior">
+  
+  <img src="figures/jasp_betabernoulli.png" alt="Result: Beta-Bernoulli prior">
+  
+</div>
+
+:::
+
+
+# What Should You Do in Practice?
+  
+- Start with defaults unless you have specific expectations.
+- If theory or data suggest otherwise, adapt the prior accordingly.
+- Always run at least one **sensitivity check**.
+- Report your choices transparently.
+
+
+# Recap of Part III
+
+In this session you have seen the **practical benefits** of analyzing networks with a Bayesian approach, as outlined in the [tutorial paper](https://journals.sagepub.com/doi/10.1177/25152459231193334):
+
+- *You can obtain evidence for both edge inclusion **and** exclusion*  
+- *You can quantify uncertainty about the network structure*  
+- *You can quantify the precision of estimated parameters*  
+
+To put this into practice, we walked through the full Bayesian workflow:
+
+✅ Testing for edge inclusion using Bayes factors  
+✅ Estimating edge parameters and visualizing uncertainty  
+✅ Exploring the influence of priors on network conclusions  
+✅ Doing all of this in both **R** and **JASP**  
+
+Whether you prefer writing code or working with a point-and-click interface, you now have the tools to perform Bayesian network analysis yourself.  
