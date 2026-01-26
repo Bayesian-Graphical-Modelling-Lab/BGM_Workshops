@@ -3800,11 +3800,10 @@ margin-bottom: 1em;
 
 <section id="recap" class="level1">
 <h1>Recap</h1>
-<p>In the morning session, we covered the fundamentals of Bayesian graphical modeling.</p>
 <ul>
-<li>We learned how Bayesian reasoning distinguishes <em>evidence of absence</em> from <em>absence of evidence</em> using the inclusion Bayes factor.</li>
-<li>We practiced estimating networks, interpreting the structure-averaged parameter estimates and their uncertainty.</li>
-<li>We briefly touched upon the priors on the network structure.</li>
+<li><p>In the morning session, we covered the fundamentals of Bayesian graphical modeling and learned how Bayesian reasoning distinguishes <em>evidence of absence</em> from <em>absence of evidence</em> using the inclusion Bayes factor.</p></li>
+<li><p>In the first part of the afternoon session we learned about testing for group differences in networks using the <strong>Bayes factor for edge differences</strong>.</p></li>
+<li><p>In this last part of the afternoon session, we will explore different <strong>priors on the network structure</strong> and how they can be used to encode different assumptions about the network topology. The focus will be on estimating single group networks. However, the Bernoulli and Beta-Bernoulli priors can also be used in the context of group comparisons.</p></li>
 </ul>
 <section id="goals-for-this-session" class="level2">
 <h2 class="anchored" data-anchor-id="goals-for-this-session">Goals for this session</h2>
@@ -4079,6 +4078,29 @@ Interpretation: Beta–Bernoulli(2,5)
 </section>
 <section id="prior-odds-under-the-bernoulli-and-beta-bernoulli-priors" class="level1">
 <h1>Prior Odds Under the Bernoulli and Beta-Bernoulli Priors</h1>
+<p>As we saw during the morning session, the priors on the network structure determine the <strong>prior odds</strong> used in the calculation of the inclusion Bayes factor.</p>
+<p>For the Bernoulli prior, the prior odds for each edge is simply: <span class="math display">\[
+\frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\pi}{1 - \pi}
+\]</span> For the prior odds of the Beta–Bernoulli prior, we have two options for the prior odds. The first option defines the priors odds independently for each edge and is defined as</p>
+<p><span class="math display">\[
+\frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\alpha}{\beta}
+\]</span> This is the option that is implemented in the <code>easybgm</code> package.</p>
+<p>However, another representation of the prior odds under the Beta–Bernoulli prior accounts for the current number of edges <span class="math inline">\(k\)</span> in the network and the total number of possible edges <span class="math inline">\(m\)</span>.</p>
+<p><span class="math display">\[
+  \text{Prior odds}(k \to k+1) = \frac{\alpha + k}{\beta + m - k - 1}.
+\]</span><br>
+Here the odds <em>do</em> depend on <span class="math inline">\(k\)</span> and <span class="math inline">\(m\)</span>:</p>
+<ul>
+<li>In a sparse network (few edges present), the odds of switching on another edge are very low.<br>
+</li>
+<li>In a dense network (many edges already present), the odds of switching on another edge are very high.<br>
+</li>
+<li>In larger networks (big <span class="math inline">\(m\)</span>), adding edges to a sparse graph becomes even less likely.</li>
+</ul>
+<p>This <span class="math inline">\(m\)</span>-dependent adjustment is known as <strong>multiplicity correction</strong>.<br>
+It connects directly to the morning session: when we tested every edge separately with inclusion Bayes factors, we were effectively running a very large number of tests.<br>
+Under a Bernoulli prior, nothing in the prior accounts for this multiplicity.<br>
+By contrast, the Beta–Bernoulli prior automatically adjusts the odds so that the evidence required for edge inclusion scales with the number of possible edges in the network.</p>
 </section>
 <section id="the-stochastic-block-model" class="level1">
 <h1>3. The Stochastic-Block Model</h1>

@@ -1,5 +1,5 @@
 ---
-title: "Group Assignment 2: A Bayesian Clustering Reanalysis of the French Short Boredom Proneness Scale"
+title: "Group Assignment 3: A Bayesian Clustering Reanalysis of the French Short Boredom Proneness Scale"
 format: pdf
 author: "Nikola Sekulovski & Maarten Marsman"
 editor: visual
