@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 - In the morning session, we covered the fundamentals of Bayesian graphical modeling and learned how Bayesian reasoning distinguishes *evidence of absence* from *absence of evidence* using the inclusion Bayes factor.
 
-- In the first part of the afternoon session we learned about testing for group differences in networks using the **Bayes factor for edge differences**.
+- In the first part of the afternoon session we learned about testing for group differences in networks using the inclusion Bayes factor for edge differences.
 
 - In this last part of the afternoon session, we will explore different **priors on the network structure** and how they can be used to encode different assumptions about the network topology. The focus will be on estimating single group networks. However, the Bernoulli and Beta-Bernoulli priors can also be used in the context of group comparisons.
 
@@ -238,7 +238,6 @@ plot_prior(p = 6, model = "beta", a = 1, b = 1)
 
 **Implications:**\
 - Prior mass is spread evenly across all possible network densities.\
-- Sparse, dense, and intermediate graphs are all equally plausible.\
 - No need to choose a single fixed value of $\pi$; the model considers a wide range of possible densities.
 :::
 
@@ -285,14 +284,13 @@ The app also provides the measures of central tendency and dispersion of the dis
 ## 2.3 Correcting for Multiple Testing with the Beta–Bernoulli Prior
 
 
-The Beta-Bernoulli prior corrects for multiple testing. This is known as **multiplicity correction**.  
+The Beta-Bernoulli prior corrects for multiple testing. This is also known as **multiplicity correction**.  
 It connects directly to the morning session: when we tested every edge separately with inclusion Bayes factors, we were effectively running a very large number of tests.  
 Under a Bernoulli prior, nothing in the prior accounts for this multiplicity.  
-By contrast, the Beta–Bernoulli prior automatically adjusts the odds for edge inclusion, so that the evidence required for edge inclusion scales with the number of possible edges in the network.
+By contrast, the Beta–Bernoulli prior automatically adjusts the odds for edge inclusion, so that the evidence required for edge inclusion scales with the number of possible edges in the network. This is because the probability is spread out over a larger mass of network densities.
 
   - In a sparse network (few edges present), the odds of switching on another edge are very low.  
   - In a dense network (many edges already present), the odds of switching on another edge are very high.  
-  
   - In larger networks (big $m$), adding edges to a sparse graph becomes even less likely. 
   
 # 3. The Stochastic-Block Model
@@ -305,13 +303,13 @@ So far, we have focused on modeling **sparsity and density** using network prior
 
 To capture such patterns, we need priors that go beyond edge probability and network density.
 
-## 3.1 Clustering in Psychological networks
+## 3.1 Clustering in Psychological Networks
 
 In many psychological network theories, we expect nodes of the network to cluster into **domains** or **communities**.
 
 -   Items measuring abilities (such as intelligence) are assumed to cluster together.
 -   Symptoms of psychological disorders may cluster into domains (e.g., ADHD or Autism, Depression or Anxiety).
--   Some symptoms may connect domains, suggesting potential **bridges**, which some authors have argued are important in the study of comorbidity of mental disorders (e.g., Cramer et al., 2010; Borsboom & Cramer, 2013).
+-   Some symptoms may connect domains, suggesting potential **bridges**, which some authors have argued are important in the study of comorbidity of mental disorders (e.g., [Cramer et al., 2010](https://www.cambridge.org/core/journals/behavioral-and-brain-sciences/article/abs/comorbidity-a-network-perspective/4A9FE571B49A9150DFABCD5845EC0B3D); [Borsboom & Cramer, 2013](https://www.annualreviews.org/content/journals/10.1146/annurev-clinpsy-050212-185608)).
 
 ![](figures/sbm_sara.png){width="80%"}
 
@@ -323,7 +321,7 @@ We need a prior (i.e., a model on the network structure) that directly incorpora
 
 ## 3.2 The Stochastic Block Model as a Prior on the Network Structure of the OMRF
 
-The **Stochastic Block Model (SBM)** addresses this by placing a prior directly on **clustering structure**:
+The **Stochastic Block Model (SBM)** is a model from the random graph literature that allows us to model clustering in networks. By stipulating the SBM as a prior on the network structure of the OMRF, we say that the probability of an edge between two nodes depends on the clusters (blocks) to which the nodes belong. In other words: 
 
 -   Nodes are assigned to latent blocks (clusters), which are learned from the data.
 -   Then, the probability of an edge between two nodes depends on the blocks to which they belong.
@@ -370,14 +368,16 @@ In other words, λ does not equal the expected number of clusters directly (as i
 
 ## 3.3 Workflow in easybgm
 
-The central practical goal, of a network analysis using the SBM prior, is to test for clustering and to estimate the cluster membership of the nodes.
+Beyond incorporating the theoretical assumption of clustering into the statistical model, a key practical goal of network analysis using the SBM prior is to test for the presence of clustering and to estimate the cluster memberships of the nodes.
 In practice, this is done through **clustering Bayes factors**.
 You can also find a tutorial that explains how to perform a clustering analysis using both `easybgm` and `bgms` packages [here](https://www.nikolasekulovski.com/blog/post2/).
 
 In this example, we will be using a simulated data set with 12 ordinal variables, where we know that the true number of clusters is 2.
 We will leave all the prior parameter settings at their default values (i.e., we set the expected number of clusters to 1, all Beta distribution shape parameters to 1, and the Dirichlet concentration parameter to 1.).
 
-Here is the workflow:
+By default the summarized output gives us the estimated cluster membership of the nodes based on the posterior mean and posterior mode. As well as the Bayes factor that tests the hypothesis of clustering  $\mathcal{H_1}: B > 1$ against no clustering $\mathcal{H_0}: B = 1$.
+
+### Estimating the model and testing for clustering
 
 ```{r}
 #| cache: true
@@ -399,10 +399,13 @@ fit_sbm <- easybgm(
   progress = FALSE
 )
 
-# summarize the rresults 
+# summarize the results 
 summary(fit_sbm)
 plot_network(fit_sbm)
 ```
+
+
+Testing point hypotheses, such as, $\mathcal{H_1}: B = 2$ against $\mathcal{H_2}: B = 1$ (i.e., no clustering), can be done with the `clusterBayesfactor()` function:
 
 ```{r}
 #| message: false
@@ -410,6 +413,11 @@ plot_network(fit_sbm)
 library(easybgm)
 clusterBayesfactor(fit_sbm, type = "point", b1 = 2, b2 = 1)
 ```
+
+### Posterior Coclustering Matrix
+
+- Inspect `posterior_mean_coclustering_matrix` to see how often pairs of nodes appear in the same cluster.  
+- Nodes with unstable assignments may be candidates for **bridge symptoms**, but this requires careful interpretation.  
 
 ```{r}
 library(pheatmap)
