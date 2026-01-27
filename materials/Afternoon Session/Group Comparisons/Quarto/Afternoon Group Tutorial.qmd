@@ -1,8 +1,8 @@
 ---
 title: "Tutorial on Network Comparison"
 author: "Maarten Marsman"
-date: 2026-01-27
-published: 2026-01-27
+date: 2026-01-28
+published: 2026-01-28
 execute:
   cache: true
   freeze: auto
