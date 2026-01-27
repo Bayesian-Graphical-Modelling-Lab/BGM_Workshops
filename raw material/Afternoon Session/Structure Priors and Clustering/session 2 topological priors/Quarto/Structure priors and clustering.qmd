@@ -282,37 +282,19 @@ fit <- easybgm(
 As a guide on deciding how to set the $\alpha$ and $\beta$ parameters, you can use [this](https://amshenao.shinyapps.io/FINAL/) Shiny app, which can help you to visualize the distribution.
 The app also provides the measures of central tendency and dispersion of the distribution, given the specified parameters.
 
-# Prior Odds Under the Bernoulli and Beta-Bernoulli Priors 
+## 2.3 Correcting for Multiple Testing with the Beta–Bernoulli Prior
 
-As we saw during the morning session, the priors on the network structure determine the **prior odds** used in the calculation of the inclusion Bayes factor.
 
-For the Bernoulli prior, the prior odds for each edge is simply:
-$$
-\frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\pi}{1 - \pi}
-$$
-For the prior odds of the Beta–Bernoulli prior, we have two options for the prior odds. The first option defines the priors odds independently for each edge and is defined as
-
-$$
-\frac{P(\mathcal{H}_1)}{P(\mathcal{H}_0)} = \frac{\alpha}{\beta}
-$$
-This is the option that is implemented in the `easybgm` package.
-
-However, another representation of the prior odds under the Beta–Bernoulli prior accounts for the current number of edges $k$ in the network and the total number of possible edges $m$.
-
-$$
-  \text{Prior odds}(k \to k+1) = \frac{\alpha + k}{\beta + m - k - 1}.
-$$  
-  Here the odds *do* depend on $k$ and $m$: 
-  
-  - In a sparse network (few edges present), the odds of switching on another edge are very low.  
-  - In a dense network (many edges already present), the odds of switching on another edge are very high.  
-  - In larger networks (big $m$), adding edges to a sparse graph becomes even less likely.  
-
-This $m$-dependent adjustment is known as **multiplicity correction**.  
+The Beta-Bernoulli prior corrects for multiple testing. This is known as **multiplicity correction**.  
 It connects directly to the morning session: when we tested every edge separately with inclusion Bayes factors, we were effectively running a very large number of tests.  
 Under a Bernoulli prior, nothing in the prior accounts for this multiplicity.  
-By contrast, the Beta–Bernoulli prior automatically adjusts the odds so that the evidence required for edge inclusion scales with the number of possible edges in the network.
+By contrast, the Beta–Bernoulli prior automatically adjusts the odds for edge inclusion, so that the evidence required for edge inclusion scales with the number of possible edges in the network.
 
+  - In a sparse network (few edges present), the odds of switching on another edge are very low.  
+  - In a dense network (many edges already present), the odds of switching on another edge are very high.  
+  
+  - In larger networks (big $m$), adding edges to a sparse graph becomes even less likely. 
+  
 # 3. The Stochastic-Block Model
 
 So far, we have focused on modeling **sparsity and density** using network priors:\
