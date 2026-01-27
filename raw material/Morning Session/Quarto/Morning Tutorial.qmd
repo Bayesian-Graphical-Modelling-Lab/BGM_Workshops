@@ -1,7 +1,7 @@
 ---
 title: "Tutorial on Bayesian Graphical Modeling"
 author: "Maarten Marsman"
-date: "2026-26-01"
+date: "2026-01-28"
 format:
   html:
     css:
