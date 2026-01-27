@@ -79,7 +79,7 @@ The partial association parameters were assigned independent Cauchy priors with 
 
 ## Inference
 
-Evidence for the presence or absence of edges was quantified using the inclusion Bays factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edges as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
+Evidence for the presence or absence of edges was quantified using the inclusion Bays factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edges as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
 
 \_\_\_\_\_\_ plots were used to visualize which edges fall into each of these categories. In this study, an inclusion Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for inclusion, and a Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
 
