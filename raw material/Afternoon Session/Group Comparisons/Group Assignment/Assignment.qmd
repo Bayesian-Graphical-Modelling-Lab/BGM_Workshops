@@ -5,7 +5,7 @@ author: "Nikola Sekulovski & Maarten Marsman"
 editor: visual
 ---
 
-# Information about the assignment \[not finished\]
+# Information about the assignment
 
 In this group assignment, you will **reanalyze an existing dataset** using the Bayesian graphical modeling methodology for group comparisons that you just learned. You are provided with a short study description and a **specified Methods section**. Your task is to:
 
@@ -32,35 +32,35 @@ The data consists of responses from N = 490 French-speaking participants ($M_{ag
 -   8 items from the Short Boredom Proneness Scale (SBPS)
 -   10 items from the Curiosity and Exploration Inventory–II (CEI-II)
 
-Missing data was handled by listwise deletion.
+Missing data were handled by listwise deletion.
 
 ## Model Specification
 
-To model the differences the differences in the network structure we used ..... (Marsman et al., in press).
+We used the multi-group ordinal Markov random field (OMRF; Marsman, van den Bergh, et al., 2025; Marsman, Waldorp, et al., 2025) to model group differences in network structure. The model represents each item as a node in an undirected network, with edges encoding conditional dependence between item pairs while controlling for all variables. The multi-group extension allows the OMRF parameters to vary across groups (Marsman, Waldorp, et al., 2025).
+
+Bayesian model averaging was used to integrate over uncertainty about which group differences were present or absent. Inference was therefore based on the posterior distribution, which accounts for uncertainty in the OMRF parameters, the presence or absence of group differences, and, when present, the magnitude of those differences.
 
 ## Prior Distributions
 
 ### Structure Priors
 
-For the inclusion of edge differences we assigned independent Bernoulli priors with a default inclusion probability of 0.5.
+The inclusion indicators for edge differences were assigned Beta–Bernoulli($1, 1$) priors, which induce a uniform prior over the number of included differences and reflect prior ignorance about their prevalence. To assess sensitivity to this assumption, we repeated the analysis using Beta–Bernoulli($1, 10$) and Beta–Bernoulli($10, 1$) priors, which a priori favor few ($1/11$) and many ($10/11$) differences, respectively.
 
 ### Parameter Priors
 
-The difference parameters were assigned independent Cauchy priors with a scale of 2.5.
+The difference parameters were assigned independent Cauchy priors with a scale of 1.0. 
 
 ## Inference
 
-## Inference (this is adjusted text from the morning session assignment)
+We quantified the evidence for the presence or absence of individual edge differences using the inclusion Bayes factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edge differences as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
 
-Evidence for the presence or absence of differences was quantified using the inclusion Bays factor. The inclusion Bayes factor \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_. These Bayes factors were used to classify edges as showing evidence for \_\_\_\_\_\_, evidence for \_\_\_\_\_\_, or \_\_\_\_\_\_ evidence.
-
-\_\_\_\_\_\_ plots were used to visualize which edges fall into each of these categories. In this study, an inclusion Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for inclusion, and a Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
-
-Posterior summaries of edge parameter estimates for the differences were obtained from the model-averaged posterior distribution from which posterior mean and HDI intervals were calculated. Centrality measures were not estimated or interpreted.
+\_\_\_\_\_\_ plots were used to visualize which edge differences fall into each of these categories. In this study, an inclusion Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for inclusion, and a Bayes factor of \_\_\_\_\_\_ was used as the threshold for strong evidence for exclusion; values falling between these thresholds were classified as inconclusive.
 
 ## Software
 
-We used the easybgm R package (Huth et al., 2024) to estimate the the model and plot the results. We ran the model using an adaptive Metropolis–Hastings algorithm, with all other sampling settings left at their default values.
+We used the `bgms` and `easybgm` R packages (Huth et al., 2024) to estimate the model and plot the results. 
+
+We ran the model using an adaptive Metropolis–Hastings algorithm, with all other sampling settings left at their default values. Convergence was assessed by inspecting the Gelman-Rubin statistic $\hat{R}$ for the sampled parameters. Overall, convergence was \_\_\_\_\_\_, with \_\_\_\_\_\_\_\_\_\_\_\_ parameters being below the recommended threshold of 1.05.
 
 # Results
 
@@ -78,14 +78,17 @@ data_list <- list(data_female, data_male)
 fit <- easybgm_compare(data_list, type = "ordinal", update_method = "adaptive-metropolis")
 ```
 
+
 ## Evidence for Edge Differences
 
-## Parameter Estimates
+
 
 # References
 
--   Huth, K., Keetelaar, S., Sekulovski, N., van den Bergh, D., & Marsman, M. (2024). Simplifying Bayesian analysis of graphical models for the social sciences with easybgm: A user-friendly R-package. *advances.in/psychology, e66366* doi: 10.56296/aip00010
+-   Huth, K., Keetelaar, S., Sekulovski, N., van den Bergh, D., & Marsman, M. (2024). Simplifying Bayesian analysis of graphical models for the social sciences with easybgm: A user-friendly R-package. *advances.in/psychology*, *e66366*. doi: 10.56296/aip00010
 
--   Martarelli, C. S., Baillifard, A., & Audrin, C. (2022). A trait-based network perspective on the validation of the french short boredom proneness scale. *European Journal of Psychological Assessment, 39,* 390–399 doi: 10.1027/1015-5759/a000718346
+-   Martarelli, C. S., Baillifard, A., & Audrin, C. (2022). A trait-based network perspective on the validation of the french short boredom proneness scale. *European Journal of Psychological Assessment*, *39*, 390–399. doi: 10.1027/1015-5759/a000718346
 
--   Marsman M, Waldorp LJ, Sekulovski N, Haslbeck JMB (in press). “Bayes factor tests for group differences in ordinal and binary graphical models.” *Psychometrika.* doi: 10.1017/psy.2025.10060
+-   Marsman, M., van den Bergh, D., & Haslbeck, J. M. B. (2025). Bayesian analysis of the ordinal Markov random field. *Psychometrika*, *90*, 146–182. doi: 10.1017/psy.2024.4
+
+-   Marsman M, Waldorp L. J., Sekulovski N, Haslbeck J. M. B. (2025). Bayes factor tests for group differences in ordinal and binary graphical models. *Psychometrika*, *90*, 1809-1842. doi: 10.1017/psy.2025.10060
