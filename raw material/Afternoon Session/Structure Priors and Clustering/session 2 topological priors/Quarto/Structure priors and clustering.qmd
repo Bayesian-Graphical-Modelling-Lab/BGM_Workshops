@@ -172,7 +172,8 @@ fit <- easybgm(
   type = "ordinal", # 
   update_method = "adaptive-metropolis",  # use metropolis for speed
   edge_prior = "Bernoulli",  # specify the prior 
-  inclusion_prob = 0.5    # set inclusion probability (default is 0.5)
+  inclusion_prob = 0.5,    # set inclusion probability (default is 0.5)
+  seed = 1
 )
 ```
 
@@ -194,7 +195,8 @@ fit_custom <- easybgm(
   type = "ordinal",
   update_method = "adaptive-metropolis",
   edge_prior = "Bernoulli",
-  inclusion_prob = inclusion_matrix
+  inclusion_prob = inclusion_matrix,
+  seed = 1
 )
 ```
 
@@ -417,6 +419,7 @@ fit_sbm <- easybgm(
 
 # summarize the rresults 
 summary(fit_sbm)
+plot_network(fit_sbm)
 ```
 
 ```{r}
@@ -432,6 +435,7 @@ pheatmap(fit_sbm$sbm$posterior_mean_coclustering_matrix,
          cluster_rows = FALSE, 
          cluster_cols = FALSE,
          color = colorRampPalette(c("#B8860B", "#009E73"))(100))
+#round(fit_sbm$sbm$posterior_mean_coclustering_matrix, 2)
 ```
 
 # Bonus: Using LLMs for Prior Specification
