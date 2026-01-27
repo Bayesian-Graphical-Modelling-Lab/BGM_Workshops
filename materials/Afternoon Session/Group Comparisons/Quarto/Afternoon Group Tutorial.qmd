@@ -1,7 +1,8 @@
 ---
 title: "Tutorial on Network Comparison"
 author: "Maarten Marsman"
-date: "2026-01-28"
+date: 2026-01-27
+published: 2026-01-27
 execute:
   cache: true
   freeze: auto
@@ -54,7 +55,7 @@ We now extend these ideas to the case of **two (or more) groups**. By the end of
 ::: {.goals}
 - Fit network models for two- or more groups using `easybgm`  
 - Use **Bayes factors** to test group differences in network parameters and interpret their strength  
-- Visualize evidence for group differences and relate it to estimated network structure  
+- Visualize evidence for group differences and relate it to the estimated network structure  
 - Assess the sensitivity of group comparison results to **prior settings** 
 :::
 
@@ -81,8 +82,7 @@ library(qgraph)
 
 ---
 
-Before we continue with the hands-on part, let’s briefly revisit what we covered
-in Part I of this session and why it matters for what we are about to do.
+Before we continue with the hands-on part, let’s briefly revisit what we covered in Part I of this session and why it matters for what we are about to do.
 
 ---
   
@@ -1007,8 +1007,3 @@ To put this into practice, we walked through the full group comparison workflow:
 ✅ Quantifying evidence for edge differences using Bayes factors  
 ✅ Visualizing results with edge evidence and network plots  
 ✅ Examining the sensitivity of conclusions to prior settings  
-
-Taken together, these tools allow you to move beyond informal visual comparisons
-and make principled statements about **which network differences are supported by
-the data, which are not, and which remain uncertain**.
-
