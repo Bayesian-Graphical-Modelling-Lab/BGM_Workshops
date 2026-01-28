@@ -64,7 +64,7 @@ Make sure to install and load the following libraries before running the example
 
 ```r
 library(easybgm)
-library(BDgraph)
+library(BGGM)
 library(bgms)
 ```
 :::
