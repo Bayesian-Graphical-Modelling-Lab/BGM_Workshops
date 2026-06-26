@@ -48,12 +48,12 @@ By the end of this session, you will be able to:
 ::: note
 **Recommended Reading:**
 
--   Sekulovski, N., Arena, G., Haslbeck, J., Huth, K., Friel, N., & Marsman, M. (2024). A Stochastic Block Prior for Clustering in Graphical Models. Preprint. doi: 10.31234/osf.io/29p3m_v1
+-   Sekulovski, N., Arena, G., Haslbeck, J., Huth, K., Friel, N., & Marsman, M. (2024). A Stochastic Block Prior for Clustering in Graphical Models. Preprint. doi: 10.31234/osf.io/29p3m_v4
 -   Sekulovski, N., Keetelaar, S., Haslbeck, J., & Marsman, M. (2024). Sensitivity analysis of prior distributions in Bayesian graphical modeling: Guiding informed prior choices for conditional independence testing. advances.in/psychology, 2 , e92355. doi: 10.56296/aip00016
 
 **Optional Reading**
 
--   Sekulovski, N., Waaijers, M., & Arena, G., (2025). LLM-Based Prior Elicitation for Bayesian Graphical Modeling. Preprint. doi: 10.31234/osf.io/k2twq_v1
+-   Sekulovski, N., Waaijers, M., & Arena, G. (in press). LLM-based prior elicitation for Bayesian graphical modeling. British Journal of Mathematical and Statistical Psychology https://doi.org/10.1111/bmsp.70045
 
 **R Setup Tip:** Make sure to install and load the following libraries before running the examples:
 :::
@@ -433,7 +433,7 @@ pheatmap(fit_sbm$sbm$posterior_mean_coclustering_matrix,
 Up to now, we have specified priors either by hand (choosing π, α, β, λ) or by using defaults.\
 But what if we could **automate prior elicitation** by using existing scientific knowledge?
 
-A recent proposal by **Sekulovski, Waaijers, & Arena (2025)** ([preprint](https://osf.io/preprints/psyarxiv/k2twq_v1)) introduces **LLM-based prior elicitation**.
+A recent proposal by **Sekulovski, Waaijers, & Arena (2025)** ([link](https://bpspsychub.onlinelibrary.wiley.com/doi/10.1111/bmsp.70045)) introduces **LLM-based prior elicitation**.
 
 ### The idea
 

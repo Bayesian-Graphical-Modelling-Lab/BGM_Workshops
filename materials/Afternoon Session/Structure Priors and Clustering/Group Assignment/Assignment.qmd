@@ -74,7 +74,7 @@ We used the easybgm R package (Huth et al., 2024) to estimate the the model and 
 #| eval: false
 #| warning: false
 #| include: false
-fit <- easybgm(data[, -c(1,2)], type = "ordinal", edge_prior = "Stochastic-Block", update_method = "adaptive-metropolis", beta_bernoulli_alpha = 2, beta_bernoulli_beta = 1, beta_bernoulli_alpha_between = 1, beta_bernoulli_beta_between = 2, lambda = 1.59)
+fit <- easybgm(data[, -c(1,2)], type = "ordinal", edge_prior = "Stochastic-Block", update_method = "adaptive-metropolis", beta_bernoulli_alpha = 1, beta_bernoulli_beta = 1, beta_bernoulli_alpha_between = 1, beta_bernoulli_beta_between =1, lambda = 1.59)
 
 summary(fit)
 clusterBayesfactor(fit, type = "point", b1 = 2, b2 = 3)
@@ -96,4 +96,4 @@ If time permits, re-run the analysis using a Beta-Bernoulli or Bernoullli struct
 
 -   Marsman, M., van den Bergh, D., & Haslbeck, J. M. B. (2025). Bayesian analysis of the ordinal Markov random field. *Psychometrika, 90* , 146–182. doi: 10.1017/psy.2024.4
 
--   Sekulovski, N., Arena, G., Haslbeck, J., Huth, K., Friel, N., & Marsman, M. (2024). A Stochastic Block Prior for Clustering in Graphical Models. Preprint. doi: 10.31234/osf.io/29p3m_v1
+-   Sekulovski, N., Arena, G., Haslbeck, J., Huth, K., Friel, N., & Marsman, M. (2024). A Stochastic Block Prior for Clustering in Graphical Models. Preprint. doi: 10.31234/osf.io/29p3m_v4
